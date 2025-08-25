@@ -1,3 +1,17 @@
+# Other files
+/Data
+/Progress
+/Scripts/Outputs
+/Scripts/maps
+/Scripts/sdmpredictorsData
+/Scripts/tax
+/Metadata
+/References
+/Manuscript
+*.fa.gz
+*.fasta
+*.fasta.gz
+
 # History files
 .Rhistory
 .Rapp.history
