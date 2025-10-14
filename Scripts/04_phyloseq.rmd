@@ -1,0 +1,113 @@
+---
+title: "04_phyloseq"
+author: "Golam Rabbani"
+output: html_notebook
+date: 2025-10-14
+---
+
+Objective: Create phyloseq objects from sequence tables and taxa tables.
+
+```{r}
+getwd()
+setwd("./Working Files/")
+knitr::opts_knit$set(root.dir = normalizePath("./Working Files/"))
+```
+
+# Initializations
+
+```{r}
+# Loading libraries and software -----------------------------------------------
+
+library(tidyverse)
+packageVersion("tidyverse")
+library(dada2)
+packageVersion("dada2")
+library(phyloseq)
+packageVersion("phyloseq")
+library(purrr)
+packageVersion("purrr")
+library(Biostrings)
+packageVersion("Biostrings")
+library(ggplot2)
+packageVersion("ggplot2")
+
+theme_set(theme_bw())
+```
+
+```{r}
+# Loading sequence tables, taxa tables, and meta data --------------------------
+
+seq_tab <- readRDS(file = "./Outputs/seqtabs/seq_tab_bacteria.RDS.RDS")
+taxa <- readRDS(file = "./Outputs/taxonomy/taxa_table_bacteria.RDS")
+meta <- readRDS(file = "./Outputs/metadata/meta_nocontam.RDS")
+
+# Load other datasets depending on total number of sequencing runs.
+seq_tab_A <- readRDS(file = "./Outputs/seqtabs/seq_tab_bacteria_A.RDS.RDS")
+taxa_A <- readRDS(file = "./Outputs/taxonomy/taxa_table_bacteria_A.RDS")
+meta_A <- readRDS(file = "./Outputs/metadata/meta_nocontam_A.RDS")
+
+seq_tab_B <- readRDS(file = "./Outputs/seqtabs/seq_tab_bacteria_B.RDS.RDS")
+taxa_B <- readRDS(file = "./Outputs/taxonomy/taxa_table_bacteria_B.RDS")
+meta_B <- readRDS(file = "./Outputs/metadata/meta_nocontam_B.RDS")
+```
+
+```{r}
+# (Optional) Merging and standardizing metadata table from multiple runs
+
+meta_full <- rbind(meta_A, meta_B) # Add as necessary.
+row.names(meta) <- NULL
+row.names(meta) <- meta$sample_name
+
+meta_full$ocean <- as.factor(meta_full$ocean)
+meta_full$country <- as.factor(meta_full$country)
+meta_full$site <- as.factor(meta_full$site)
+meta_full$host <- as.factor(meta_full$host)
+meta_full$host_taxa <- as.factor(meta_full$host_taxa)
+meta_full$host_section <- as.factor(meta_full$host_section)
+meta_full$collection_date <- as.Date(meta_full$collection_date, format = "%d / %m / %Y")
+year(meta_full$collection_date[year(meta_full$collection_date) < 2000 & !is.na(meta_full$collection_date)]) <- 2000 + year(meta_full$collection_date[year(meta_full$collection_date) < 2000 & !is.na(meta_full$collection_date)])
+
+saveRDS(meta_full, file = "./Outputs/meta_full.RDS")
+```
+
+# Create phyloseq object
+
+```{r}
+ps <- phyloseq(otu_table(seq_tab, taxa_are_rows=FALSE),
+               sample_data(meta),
+               tax_table(taxa))
+
+# (Optional) If multiple sequencing runs, create individual phyloseq objects for specific taxa and then merge. Use standardized metadata.
+
+ps_A <- phyloseq(otu_table(seq_tab_A, taxa_are_rows=FALSE),
+               sample_data(meta_full[meta_full$host %in% c("Species A"),]),
+               tax_table(taxa_A))
+ps_B <- phyloseq(otu_table(seq_tab_B, taxa_are_rows=FALSE),
+               sample_data(meta_full[meta_full$host %in% c("Species B"),]),
+               tax_table(taxa_B))
+ps_full <- merge_phyloseq(ps_A, ps_B)
+```
+
+The next steps are continued using `ps_full`.
+
+```{r}
+write.csv(t(data.frame(otu_table(ps_full))), file = "./Outputs/seq_tab_full.csv", row.names = TRUE)
+write.csv(data.frame(tax_table(ps_full)), file = "./Outputs/taxa_table_full.csv", row.names = TRUE)
+meta.png <- data.frame(sample_data(ps_full))
+write.csv(meta.png, file = "./Outputs/meta_full.csv", row.names = TRUE)
+
+saveRDS(ps_full, file = "./Outputs/phyloseq_raw.RDS")
+```
+
+# Cleaning phyloseq object
+
+```{r}
+# Prune Mock Samples -----------------------------------------------------------
+ps_full <- subset_samples(ps_full, site != "Mock")
+
+
+```
+
+
+
+

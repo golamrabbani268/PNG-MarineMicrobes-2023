@@ -1,0 +1,150 @@
+---
+title: "03_taxa_assignment"
+author: "Golam Rabbani"
+output: html_notebook
+date: 2025-10-14
+---
+
+Objective: Assign taxonomy to sequence tables for bacteria and fungi.
+
+```{r}
+getwd()
+setwd("./Working Files/")
+knitr::opts_knit$set(root.dir = normalizePath("./Working Files/"))
+```
+
+# Initializations
+
+```{r}
+# Loading libraries and software -----------------------------------------------
+
+library(dada2)
+packageVersion("dada2")
+library(Biostrings)
+packageVersion("Biostrings")
+library(purrr)
+packageVersion("purrr")
+library(tidyverse)
+packageVersion("tidyverse")
+```
+
+```{r}
+# Loading the sequence table ---------------------------------------------------
+
+seq_tab_clean_dada2 <- readRDS("./Outputs/seq_tab_clean_dada2.RDS")
+```
+
+# Assign Taxonomy
+
+```{r}
+# For 16S bacterial samples ----------------------------------------------------
+
+taxa <- assignTaxonomy(seq_tab_clean_dada2, "../tax/silva_nr99_v138.1_train_set.fa.gz", multithread=TRUE,verbose=TRUE) # Taxa file location
+# taxa <- addSpecies(taxa, "../tax/silva_species_assignment_v138.1.fa.gz") # Species level if required but memory intensive.
+
+# Renaming phyla to updated naming conventions.
+taxa <- taxa %>% 
+  mutate(Phylum = case_when(
+    Phylum == "Firmicutes" ~ "Bacillota",
+    Phylum == "Proteobacteria" ~ "Pseudomonadota",
+    Phylum == "Actinobacteria" ~ "Actinomycetota",
+    Phylum == "Bacteroidetes" ~ "Bacteroidota",
+    str_ends(Phylum, "ria") ~ paste0(str_remove(Phylum, "ria"), "rota"),
+    .default = Phylum
+  )
+)
+
+saveRDS(taxa, file = "./Outputs/taxa_table_raw.RDS")
+```
+
+```{r}
+# For ITS1 fungal samples ------------------------------------------------------
+
+# Remove all seqs with fewer than 100 nucleotides
+keeper_asvs <- nchar(names(as.data.frame(seq_tab_clean_dada2))) > 99
+seq_tab_clean_dada2 <- seq_tab_clean_dada2[,keeper_asvs]
+
+taxa <- assignTaxonomy(seq_tab_clean_dada2, "../tax/sh_general_release_dynamic_all_19.02.2025.fasta", multithread=TRUE,verbose=TRUE, tryRC=TRUE) # Taxa file location
+
+saveRDS(seq_tab_clean_dada2, file = "./Outputs/seq_table_clean_dada2_lengthfiltered.RDS")
+saveRDS(taxa, file = "./Outputs/taxa_table_raw.RDS")
+```
+
+# Filtering out non-target taxa
+
+```{r}
+# For 16S bacterial samples ----------------------------------------------------
+
+# Removing mitochondria, chloroplast, archaea, and human contaminants.
+
+#seq_tab_clean_dada2 <- readRDS(file = "./Outputs/seq_tab_clean_dada2.RDS")
+#taxa <- readRDS(file = "./Outputs/taxa_table_raw.RDS")
+
+# Remove "mitochondria" taxa
+is_mitochon <- taxa[,"Family"] %in% "Mitochondria"
+taxa <- taxa[!is_mitochon,]
+seq_tab_nomitochon <- seq_tab_clean_dada2[,!is_mitochon]
+
+# Remove "Chloroplast" taxa
+is_chloro <- taxa[,"Order"] %in% "Chloroplast"
+taxa <- taxa[!is_chloro,]
+seq_tab_nochloro <- seq_tab_nomitochon[,!is_chloro]
+
+# Remove "Archaea" taxa
+is_archaea <- taxa[,"Kingdom"] %in% "Archaea"
+taxa <- taxa[!is_archaea,]
+seq_tab_noarchaea <- seq_tab_nochloro[,!is_archaea]
+
+# Remove human contaminants
+contam_genera <- c("Bacteroides", "Bifidobacterium", "Corynebacterium", "Cutibacterium", "Escherichia", 
+                   "Faecalibacterium", "Haemophilus", "Klebsiella", "Lactobacillus", "Listeria", 
+                   "Moraxella", "Neisseria", "Porphyromonas", "Prevotella", "Propionibacterium", 
+                   "Salmonella", "Shigella", "Staphylococcus", "Streptococcus", "Veillonella")
+is_contam <- taxa[,"Genus"] %in% contam_genera
+taxa <- taxa[!is_contam,]
+seq_tab_nocontam <- seq_tab_noarchaea[,!is_contam]
+
+saveRDS(seq_tab_nocontam, file = "./Outputs/seq_tab_bacteria.RDS")
+saveRDS(taxa, file = "./Outputs/taxa_table_bacteria.RDS")
+```
+
+```{r}
+# For ITS1 fungal samples ----------------------------------------------------
+
+# Removing non-fungal taxa.
+
+#seq_tab_clean_dada2 <- ("./Outputs/seq_table_clean_dada2_lengthfiltered.RDS")
+#taxa <- readRDS(file = "./Outputs/taxa_table_raw.RDS")
+
+is_fungi <- taxa[,"Kingdom"] %in% "k__Fungi"
+taxa <- taxa[is_fungi,]
+seq_tab_fungi <- seq_tab_clean_dada2[,is_fungi]
+
+saveRDS(seq_tab_fungi, file = "./Outputs/seq_tab_fungi.RDS")
+saveRDS(taxa, file = "./Outputs/taxa_table_fungi.RDS")
+```
+
+```{r}
+# Track reads through pipeline -------------------------------------------------
+
+# For 16S bacterial samples ====================================================
+
+clean_dada2 <- rowSums(seq_tab_clean_dada2)
+nomitochon <- rowSums(seq_tab_nomitochon)
+nochloro <- rowSums(seq_tab_nochloro)
+noarchaea <- rowSums(seq_tab_noarchaea)
+nocontam <- rowSums(seq_tab_nocontam)
+netloss <- (clean_dada2-nocontam)/clean_dada2
+track <- data.frame(clean_dada2, nomitochon, nochloro, noarchaea, nocontam, netloss)
+write.csv(track_decontam, file = "./Outputs/read_counts_at_each_step_after_dada2.csv", row.names = TRUE)
+track
+
+# For ITS1 fungal samples ====================================================
+
+clean_dada2 <- rowSums(seq_tab_clean_dada2)
+onlyfungi <- rowSums(seq_tab_fungi)
+netloss <- (clean_dada2-onlyfungi)/clean_dada2
+track <- data.frame(clean_dada2, onlyfungi, netloss)
+write.csv(track_decontam, file = "./Outputs/read_counts_at_each_step_after_dada2.csv", row.names = TRUE)
+track
+```

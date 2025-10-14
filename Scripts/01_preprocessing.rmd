@@ -1,0 +1,244 @@
+---
+title: "01_preprocessing"
+author: "Golam Rabbani"
+output: html_notebook
+date: 2025-10-13
+---
+
+Objective: Remove primers from sequencing data.
+
+```{r}
+getwd()
+setwd("./Working Files/")
+knitr::opts_knit$set(root.dir = normalizePath("./Working Files/"))
+```
+
+# Initializations
+
+```{r}
+# Loading libraries and software -----------------------------------------------
+
+cutadapt <- "/opt/anaconda3/bin/cutadapt" # Set to path to cutadapt.
+system2(cutadapt, args = "--version")
+
+library(ShortRead)
+package_version("ShortRead")
+library(seqTools)
+package_version("seqTools")
+library(dada2)
+package_version("dada2")
+library(tidyverse)
+package_version("tidyverse")
+```
+
+```{r}
+# Loading the sequences --------------------------------------------------------
+
+path <- "../Data" # Directory containing the fastq files after unzipping.
+list.files(path)
+
+# Assuming, forward and reverse fastq filenames have format: 
+# SAMPLENAME_1.fastq and SAMPLENAME_2.fastq, we extract the sample names.
+fnFs <- sort(list.files(path, pattern = "_1.fastq.gz", full.names = TRUE))
+fnRs <- sort(list.files(path, pattern = "_2.fastq.gz", full.names = TRUE))
+# Extract sample names, assuming filenames have format: SAMPLENAME_1.fastq.
+sample.names <- sapply(strsplit(basename(fnFs), "_1.fastq.gz"), `[`, 1)
+```
+
+```{r}
+# Initiatilzing functions --------------------------------------------------------------------
+
+# Function to get all orientations of a sequence.
+allOrients <- function(sequence) {
+  require(Biostrings)
+  dna <- DNAString(sequence)
+  orients <- c(
+    forward = dna, complement = complement(dna), reverse = reverse(dna),
+    rev_comp = reverseComplement(dna)
+  )
+  return(sapply(orients, toString))
+}
+
+# Function to count presence of a sequence in reads.
+sequenceHits <- function(sequence, fn) {
+  nhits <- vcountPattern(sequence, sread(readFastq(fn)), fixed = FALSE)
+  return(sum(nhits > 0))
+}
+
+# Function to count reads in a file.
+countReads <- function(fastqPath) {
+  print(fastqPath)
+  if ("try-error" %in% class(try(readFastq(fastqPath), silent = TRUE))) {
+    return(NA)
+  } else {
+    nrow(readFastq(fastqPath))
+  }
+}
+
+# Function to compute file size.
+fileSize <- function(fastqPath) {
+  print(fastqPath)
+  if ("try-error" %in% class(try(file.size(fastqPath), silent = TRUE))) {
+    return(NA)
+  } else {
+    file.size(fastqPath)
+  }
+}
+```
+
+# Data preparation
+
+```{r}
+# Pre-filtering to remove ambiguous bases (Ns) ---------------------------------
+
+# Put N-filtered files in filtN/ subdirectory.
+fnFs_filtN <- file.path(path, "N_filtered", basename(fnFs))
+fnRs_filtN <- file.path(path, "N_filtered", basename(fnRs))
+filterAndTrim(fnFs, fnFs_filtN, fnRs, fnRs_filtN, maxN = 0, multithread = TRUE)
+```
+
+Perform adapter removal if necessary, before primer removal. The same code template can be used for adapters as used for primers below. Remember to include a variable to calculate reads and file size after adapter removal and add to summary files.
+
+# Primer removal
+
+```{r}
+# Declare primer sequence ------------------------------------------------------
+
+fwd_primer <- "GTGCCAGCMGCCGCGGTAA" # 515F; Fungal: CTTGGTCATTTAGAGGAAGTAA
+rev_primer <- "GGACTACHVGGGTWTCTAAT" # 806R; Fungal: GCTGCGTTCTTCATCGATGC
+
+# Getting all orientations.
+fwd_primer_orients <- allOrients(fwd_primer)
+rev_primer_orients <- allOrients(rev_primer)
+fwd_primer_orients
+```
+
+```{r}
+# Counting primer containing reads before removal ------------------------------
+rbind(
+  fwd_primer_forward_reads = sapply(fwd_primer_orients, sequenceHits, fn = fnFs_filtN[[100]]),
+  fwd_primer_reverse_reads = sapply(fwd_primer_orients, sequenceHits, fn = fnRs_filtN[[100]]),
+  rev_primer_forward_reads = sapply(rev_primer_orients, sequenceHits, fn = fnFs_filtN[[100]]),
+  rev_primer_reverse_reads = sapply(rev_primer_orients, sequenceHits, fn = fnRs_filtN[[100]])
+)
+```
+
+```{r}
+# Removing primers -------------------------------------------------------------
+
+path_cut_primer <- file.path(path, "Primer_Removed")
+if (!dir.exists(path_cut_primer)) dir.create(path_cut_primer)
+fnFs_cut_primer <- file.path(path_cut_primer, basename(fnFs))
+fnRs_cut_primer <- file.path(path_cut_primer, basename(fnRs))
+
+fwd_primer_rc <- dada2:::rc(fwd_primer)
+rev_primer_rc <- dada2:::rc(rev_primer)
+# Trim fwd and the reverse-complement of rev off of R1 (forward reads)
+R1.flags <- paste("-g", fwd_primer, "-a", rev_primer_rc)
+# Trim rev and the reverse-complement of fwd off of R2 (reverse reads)
+R2.flags <- paste("-G", rev_primer, "-A", rev_primer_rc)
+
+# Run cutadapt
+output_stats_primer <- capture.output(
+  for (i in seq_along(fnFs)) {
+    system2(cutadapt, args = c(
+      R1.flags, R2.flags, "-n", 2, # -n 2 required to remove fwd and rev primer
+      "-m", 1,
+      "--cores", 0,
+      "-o", fnFs_cut_primer[i], "-p", fnRs_cut_primer[i], # output files
+      fnFs_filtN[i], fnRs_filtN[i]
+    )) # input files
+  }
+)
+if (!dir.exists("./Outputs")) dir.create("./Outputs")
+cat(output_stats_primer, 
+    file = "./Outputs/cutadapt_primer_trimming_stats.txt", 
+    sep = "\n", append = FALSE)
+```
+
+```{r}
+# Counting primer containing reads after removal -------------------------------
+
+rbind(
+  fwd_primer_forward_reads = sapply(fwd_primer_orients, sequenceHits, fn = fnFs_cut_primer[[100]]),
+  fwd_primer_reverse_reads = sapply(fwd_primer_orients, sequenceHits, fn = fnRs_cut_primer[[100]]),
+  rev_primer_forward_reads = sapply(rev_primer_orients, sequenceHits, fn = fnFs_cut_primer[[100]]),
+  rev_primer_reverse_reads = sapply(rev_primer_orients, sequenceHits, fn = fnRs_cut_primer[[100]])
+)
+```
+
+# Summary calculations
+
+```{r}
+# Getting all filenames --------------------------------------------------------
+
+library(microseq)
+packageVersion("microseq")
+
+# Forward and reverse fastq filenames have the format SAMPLENAME_#.fastq.gz
+cutFs_raw <- sort(list.files(path, pattern = "_1.fastq.gz", full.names = TRUE))
+cutRs_raw <- sort(list.files(path, pattern = "_2.fastq.gz", full.names = TRUE))
+cut_raw <- sort(list.files(path, pattern = "fastq.gz", full.names = TRUE))
+
+path_filtN <- file.path(path, "N_filtered")
+cutFs_filtN <- sort(list.files(path_filtN, pattern = "_1.fastq.gz", full.names = TRUE))
+cutRs_filtN <- sort(list.files(path_filtN, pattern = "_2.fastq.gz", full.names = TRUE))
+cut_filtN <- sort(list.files(path_filtN, pattern = "fastq.gz", full.names = TRUE))
+
+cutFs_primer <- sort(list.files(path_cut_primer, pattern = "_1.fastq.gz", full.names = TRUE))
+cutRs_primer <- sort(list.files(path_cut_primer, pattern = "_2.fastq.gz", full.names = TRUE))
+cut_primer <- sort(list.files(path_cut_primer, pattern = "fastq.gz", full.names = TRUE))
+
+# Extract sample names, assuming filenames have the format SAMPLENAME_X
+get.sample.name <- function(fname) strsplit(basename(fname), ".fastq.gz")[[1]][1]
+sample.names <- unname(sapply(cutFs_primer, get.sample.name))
+head(sample.names)
+
+samples <- sort(list.files(path, pattern = "fastq.gz", full.names = FALSE))
+```
+
+```{r}
+# Comparing number of reads for each sample during each step -------------------
+
+names(cut_raw) <- unname(sapply(cut_raw, get.sample.name))
+names(cut_filtN) <- unname(sapply(cut_filtN, get.sample.name))
+names(cut_primer) <- unname(sapply(cut_primer, get.sample.name))
+
+raw_seqs <- sapply(cut_raw, FUN = countReads)
+pre_filtered_seqs <- sapply(cut_filtN, FUN = countReads)
+primer_removed_seqs <- sapply(cut_primer, FUN = countReads)
+
+sample_summaries <- data.frame("sample_name" = names(cut_raw))
+sample_summaries <- sample_summaries %>%
+  left_join(data.frame(names(cut_raw), raw_seqs), join_by(sample_name == names.cut_raw.)) %>%
+  left_join(data.frame(names(cut_filtN), pre_filtered_seqs), join_by(sample_name == names.cut_filtN.)) %>%
+  left_join(data.frame(names(cut_primer), primer_removed_seqs), join_by(sample_name == names.cut_primer.))
+sample_summaries$fraction_of_raw_data_in_final_seqs <- sample_summaries$primer_removed_seqs / sample_summaries$raw_seqs
+
+write.csv(sample_summaries, file = "./Outputs/Number of Sequence Summary (Preprocessing).csv")
+summary(sample_summaries)
+hist(sample_summaries$raw_seqs)
+hist(sample_summaries$primer_removed_seqs)
+hist(sample_summaries$fraction_of_raw_data_in_final_seqs)
+```
+
+```{r}
+# Comparing file sizes for each step -------------------------------------------
+
+raw_size <- sapply(cut_raw, FUN = fileSize)
+pre_filtered_size <- sapply(cut_filtN, FUN = fileSize)
+primer_removed_size <- sapply(cut_primer, FUN = fileSize)
+
+file_info <- data.frame("sample_name" = names(cut_raw))
+file_info <- file_info %>%
+  left_join(data.frame(names(cut_raw), raw_size), join_by(sample_name == names.cut_raw.)) %>%
+  left_join(data.frame(names(cut_filtN), pre_filtered_size), join_by(sample_name == names.cut_filtN.)) %>%
+  left_join(data.frame(names(cut_primer), primer_removed_size), join_by(sample_name == names.cut_primer.))
+file_info$fraction_of_raw_data_in_final_size <- file_info$primer_removed_size / file_info$raw_size
+
+write.csv(file_info, file = "./Outputs/Size of Files Summary (Preprocessing).csv")
+summary(file_info)
+hist(file_info$raw_size)
+hist(file_info$primer_removed_size)
+hist(file_info$fraction_of_raw_data_in_final_size)
+```

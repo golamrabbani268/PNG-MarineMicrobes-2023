@@ -1,0 +1,189 @@
+---
+title: "02_dada2"
+author: "Golam Rabbani"
+output: html_notebook
+date: 2025-10-11
+---
+
+Objective: Create ASV table from sequencing data through the DADA2 pipeline.
+
+```{r}
+getwd()
+setwd("./Working Files/")
+knitr::opts_knit$set(root.dir = normalizePath("./Working Files/"))
+```
+
+# Initializations
+
+```{r}
+# Loading libraries and software -----------------------------------------------
+
+library(dada2)
+packageVersion("dada2")
+library(ggplot2)
+packageVersion("ggplot2")
+library(Biostrings)
+packageVersion("Biostrings")
+library(purrr)
+packageVersion("purrr")
+library(tidyverse)
+packageVersion("tidyverse")
+library(decontam)
+packageVersion("decontam")
+```
+
+```{r}
+# Loading the sequences --------------------------------------------------------
+path <- "../Data" # Directory containing the fastq files after unzipping.
+list.files(path)
+
+# Assuming, forward and reverse fastq filenames have format: 
+# SAMPLENAME_1.fastq and SAMPLENAME_2.fastq
+fnFs <- sort(list.files(path, pattern="_1.fastq.gz", full.names = TRUE))
+fnRs <- sort(list.files(path, pattern="_2.fastq.gz", full.names = TRUE))
+# Extract sample names, assuming filenames have format: SAMPLENAME_1.fastq
+sample_names <- sapply(strsplit(basename(fnFs), "_1.fastq.gz"), `[`, 1)
+```
+
+# Data preparation
+
+```{r}
+# Plotting quality profiles to decide trimming length --------------------------
+
+plotQualityProfile(fnFs[11:12])
+ggsave("./Outputs/Quality plot F.png", width = 6, height = 4)
+plotQualityProfile(fnRs[11:12])
+ggsave("./Outputs/Quality plot R.png", width = 6, height = 4)
+```
+
+We trim at 250, 150 for 16S sequences but no trimming for ITS1 samples.
+
+```{r}
+# Filtering and trimming sequences ---------------------------------------------
+
+# Place filtered files in filtered/ subdirectory.
+filtFs <- file.path(path, "filtered", paste0(sample_names, "_F_filt.fastq.gz"))
+filtRs <- file.path(path, "filtered", paste0(sample_names, "_R_filt.fastq.gz"))
+names(filtFs) <- sample_names
+names(filtRs) <- sample_names
+
+trunc_len_F <- 250
+trunc_len_R <- 150
+max_EE_F <- 2 # Default 2
+max_EE_R <- 2 # Default 2
+
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs,
+  truncLen = c(trunc_len_F, trunc_len_R),
+  maxN = 0, maxEE = c(max_EE_F, max_EE_R), truncQ = 2, rm.phix = TRUE,
+  compress = TRUE, multithread = TRUE
+)
+head(out)
+```
+
+```{r}
+# Learn the Error Rates --------------------------------------------------------
+
+err_F <- learnErrors(filtFs, multithread=TRUE) 
+err_R <- learnErrors(filtRs, multithread=TRUE) 
+plotErrors(err_F, nominalQ=FALSE)
+ggsave("./Outputs/Error F plot.png", width = 6, height = 4)
+plotErrors(err_R, nominalQ=FALSE)
+ggsave("./Outputs/Error R plot.png", width = 6, height = 4)
+```
+
+# Running dada2
+```{r}
+# Dereplication, sample inference and merging paired reads ---------------------
+
+dada_Fs <- vector("list", length(sample_names))
+dada_Rs <- vector("list", length(sample_names))
+mergers <- vector("list", length(sample_names))
+
+names(dada_Fs) <- sample_names
+names(dada_Rs) <- sample_names
+names(mergers) <- sample_names
+
+for (sam in sample_names){
+  cat("Processing:", sam, "\n")
+  
+  derep_F <- derepFastq(filtFs[[sam]], verbose = TRUE)
+  derep_R <- derepFastq(filtRs[[sam]], verbose = TRUE)
+  
+  dada_Fs[[sam]] <- dada(derep_F, err=err_F, multithread = TRUE)
+  dada_Rs[[sam]] <- dada(derep_R, err=err_R, multithread = TRUE)
+  
+  mergers[[sam]] <- mergePairs(dada_Fs[[sam]], derep_F, dada_Rs[[sam]], derep_R, verbose = TRUE)
+}
+head(mergers[[1]])
+```
+
+# Construct sequence table
+```{r}
+seq_tab <- makeSequenceTable(mergers)
+dim(seq_tab)
+saveRDS(seq_tab, "./Outputs/seqtab_raw.RDS")
+
+# Inspect distribution of sequence lengths
+table(nchar(getSequences(seq_tab)))
+```
+
+# Filtering reads
+```{r}
+# Removing chimeras ------------------------------------------------------------
+seq_tab_nochim <- removeBimeraDenovo(seq_tab, method="consensus", multithread=TRUE, verbose=TRUE) 
+dim(seq_tab_nochim)
+saveRDS(seq_tab_nochim, "./Outputs/seq_tab_nochim.RDS")
+
+sum(seq_tab_nochim) / sum(seq_tab)
+```
+
+```{r}
+# Remove contaminants ----------------------------------------------------------
+
+# Import metadata ==============================================================
+
+meta = read.csv("../Resources/metadata-16s.csv", stringsAsFactors = FALSE)
+row.names(meta) <- NULL
+row.names(meta) <- meta$sample_name
+row.names(seq_tab_nochim)
+
+# Reorder metadata for consistency.
+meta = meta[order(row.names(meta)),]
+meta = meta[rownames(meta) %in% rownames(seq_tab_nochim),]
+identical(rownames(meta), rownames(seq_tab_nochim)) # Should be TRUE.
+
+# Remove contaminants using controls ===========================================
+
+# Find control samples (extraction negatives).
+meta$controls <- meta$site == "Blank"
+
+# Find contaminants.
+contams = isContaminant(seq_tab_nochim, neg = meta$controls, normalize = TRUE)
+table(contams$contaminant)
+write.csv(contams, file = "./Outputs/likely_contaminants.csv", row.names = TRUE)
+
+# Remove them.
+seq_tab_clean_dada2 = seq_tab_nochim[meta$controls == FALSE,]
+meta = meta[meta$controls == FALSE,]
+saveRDS(seq_tab_clean_dada2, file = "./Outputs/seq_tab_clean_dada2.RDS")
+saveRDS(meta, file = "./Outputs/meta_nocontam.RDS")
+```
+
+```{r}
+# Track reads through pipeline -------------------------------------------------
+
+getN <- function(x) sum(getUniques(x))
+
+track <- cbind(out, 
+               sapply(dada_Fs, getN), 
+               sapply(dada_Rs, getN), 
+               sapply(mergers, getN), 
+               rowSums(seq_tab_nochim),
+               rowSums(seq_tab_clean_dada2))
+# If processing a single sample, remove the sapply calls: e.g. replace sapply(dada_Fs, getN) with getN(dada_Fs)
+
+colnames(track) <- c("input", "filtered", "denoised_F", "denoised_R", "merged", "nonchim", "clean_dada2")
+rownames(track) <- sample_names
+track
+write.csv(track, file = "./Outputs/dada2_track.csv")
+```
