@@ -1,0 +1,24 @@
+---
+title: "06_analysis_rarefaction_curves"
+author: "Golam Rabbani"
+output: html_notebook
+date: 2025-10-14
+---
+
+Objective: Load in and prepare phyloseq objects to be used for analyses.
+
+```{r}
+getwd()
+setwd("./Working Files/")
+knitr::opts_knit$set(root.dir = normalizePath("./Working Files/"))
+```
+
+# Initializations
+
+```{r}
+# Loading libraries and software -----------------------------------------------
+
+library(phyloseq)
+packageVersion("phyloseq")
+source("05_analysis_initializations.R")
+```

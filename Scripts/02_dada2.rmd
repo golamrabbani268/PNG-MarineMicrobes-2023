@@ -185,5 +185,5 @@ track <- cbind(out,
 colnames(track) <- c("input", "filtered", "denoised_F", "denoised_R", "merged", "nonchim", "clean_dada2")
 rownames(track) <- sample_names
 track
-write.csv(track, file = "./Outputs/dada2_track.csv")
+write.csv(track, file = "./Outputs/track_dada2.csv")
 ```

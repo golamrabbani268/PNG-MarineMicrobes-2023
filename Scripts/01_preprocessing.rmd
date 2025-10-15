@@ -215,7 +215,7 @@ sample_summaries <- sample_summaries %>%
   left_join(data.frame(names(cut_primer), primer_removed_seqs), join_by(sample_name == names.cut_primer.))
 sample_summaries$fraction_of_raw_data_in_final_seqs <- sample_summaries$primer_removed_seqs / sample_summaries$raw_seqs
 
-write.csv(sample_summaries, file = "./Outputs/Number of Sequence Summary (Preprocessing).csv")
+write.csv(sample_summaries, file = "./Outputs/track_preprocessing_sequences.csv")
 summary(sample_summaries)
 hist(sample_summaries$raw_seqs)
 hist(sample_summaries$primer_removed_seqs)
@@ -236,7 +236,7 @@ file_info <- file_info %>%
   left_join(data.frame(names(cut_primer), primer_removed_size), join_by(sample_name == names.cut_primer.))
 file_info$fraction_of_raw_data_in_final_size <- file_info$primer_removed_size / file_info$raw_size
 
-write.csv(file_info, file = "./Outputs/Size of Files Summary (Preprocessing).csv")
+write.csv(file_info, file = "./Outputs/track_preprocessing_file_size.csv")
 summary(file_info)
 hist(file_info$raw_size)
 hist(file_info$primer_removed_size)

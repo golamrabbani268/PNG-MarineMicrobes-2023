@@ -105,9 +105,41 @@ saveRDS(ps_full, file = "./Outputs/phyloseq_raw.RDS")
 # Prune Mock Samples -----------------------------------------------------------
 ps_full <- subset_samples(ps_full, site != "Mock")
 
+# Changing actual sequences to custom ASV IDs ----------------------------------
+dna <- Biostrings::DNAStringSet(taxa_names(ps_full))
+names(dna) <- taxa_names(ps_full)
+ps_full <- merge_phyloseq(ps_full, dna)
+taxa_names(ps_full) <- paste0("ASV", seq(ntaxa(ps_full)))
+ps_full
 
+saveRDS(ps_full, file = "./Outputs/phyloseq-clean.RDS")
+write.csv(data.frame(refseq(ps_full)), file = "./Outputs/reference_sequences.csv")
+ps <- ps_full
+
+# Removing less prevalent sequences --------------------------------------------
+prev_df = apply(X = otu_table(ps, taxa_are_rows = FALSE),
+               MARGIN = ifelse(taxa_are_rows(ps), yes = 1, no = 2),
+               FUN = function(x){sum(x > 0)})
+prev_df = data.frame(prevalence = prev_df,
+                    total_abundance = taxa_sums(ps),
+                    tax_table(ps))
+prev_df_1 = subset(prev_df, Phylum %in% get_taxa_unique(ps, "Phylum"))
+nsamples(ps)
+prevalence_threshold = 2 # Define prevalence threshold as 2 samples
+# Execute prevalence filter
+keep_taxa = rownames(prev_df_1)[(prev_df_1$Prevalence >= prevalence_threshold)]
+ps_1 = prune_taxa(keep_taxa, ps)
+
+track <- data.frame(sample_name = row.names(as.data.frame(ps@sam_data)), 
+                    ps_clean = sample_sums(ps), 
+                    ps_final = sample_sums(ps_1),
+                    proportion = ps_final / ps_clean)
+track
+ggplot(track, aes(proportion)) + geom_boxplot(notch = TRUE)
+hist(track$proportion)
+summary(track$proportion)
+
+# Final phyloseq object --------------------------------------------------------
+saveRDS(ps_1, file = "./Outputs/phyloseq.RDS")
+write.csv(df.track, file = "./Outputs/track_phyloseq.csv", row.names = TRUE)
 ```
-
-
-
-
