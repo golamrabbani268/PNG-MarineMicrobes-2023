@@ -1,0 +1,125 @@
+---
+title: "07_analysis_richness_accumulation_curve"
+author: "Golam Rabbani"
+output: html_notebook
+date: 2025-10-16
+---
+
+Objective: Plotting ASV richness accumulation curves to compare richness.
+
+```{r}
+getwd()
+setwd("./Working Files/")
+knitr::opts_knit$set(root.dir = normalizePath("./Working Files/"))
+```
+
+# Initializations
+
+```{r}
+# Loading libraries and software -----------------------------------------------
+
+library(phyloseq)
+packageVersion("phyloseq")
+library(vegan)
+packageVersion("vegan")
+
+# Loading data -----------------------------------------------------------------
+
+source("05_analysis_initializations.R")
+```
+
+```{r}
+otu_mangrove <- data.frame(otu_table(ps_mangrove))
+meta_mangrove <- data.frame(sample_data(ps_mangrove))
+
+otu_full <- data.frame(otu_table(ps_full))
+meta_full <- data.frame(sample_data(ps_full))
+```
+
+# Accumulation curve of richness
+```{r}
+venn_mangrove_hostSection <- ps_venn(ps_mangrove, "hostSection")
+venn_mangrove_hostSection
+```
+
+```{r}
+# Overall for mangroves(exact)
+accum_curve_exact = specaccum(otu_mangrove, method = "exact")
+
+# By site for mangroves (collector)
+table(meta_mangrove$site[order(meta_mangrove$site)])
+accum_curve_site = specaccum(otu_mangrove[order(meta_mangrove$site),], method = "collector")
+ggplot() + 
+  annotate("rect", xmin = 0, xmax = 40.5, ymin = -Inf, ymax = Inf,
+           alpha = 0.5, fill = color_site["Kavieng"]) +
+  annotate("rect", xmin = 40.5, xmax = 120.5, ymin = -Inf, ymax = Inf,
+           alpha = 0.5, fill = color_site["Kimbe Bay"]) +
+  annotate("rect", xmin = 120.5, xmax = 200.5, ymin = -Inf, ymax = Inf,
+           alpha = 0.5, fill = color_site["Madang"]) +
+  annotate("rect", xmin = 200.5, xmax = 320.5, ymin = -Inf, ymax = Inf,
+           alpha = 0.5, fill = color_site["Milne Bay"]) +
+  annotate("rect", xmin = 320.5, xmax = 400, ymin = -Inf, ymax = Inf,
+           alpha = 0.5, fill = color_site["Port Moresby"]) +
+  geom_line(aes(x = accum_curve_site$sites, y = accum_curve_site$richness)) +
+  lims(x = c(0,400))
+  
+# By host species for mangroves (collector)
+unique(meta_mangrove$host_species[order(meta_mangrove$host_species)])
+accum_curve_host_species = specaccum(otu_mangrove[order(meta_mangrove$host_species),], method = "collector")
+
+# By host section for mangroves (collector)
+table(meta_mangrove$host_section[order(meta_mangrove$host_section)])
+accum_curve_host_section <- specaccum(otu_mangrove[order(meta_mangrove$host_section),], method = "collector")
+ggplot() + 
+  annotate("rect", xmin = 0, xmax = 100.5, ymin = -Inf, ymax = Inf,
+           alpha = 0.5, fill = color_host_section["Fruit"]) +
+  annotate("rect", xmin = 100.5, xmax = 200.5, ymin = -Inf, ymax = Inf,
+           alpha = 0.5, fill = color_host_section["Leaf"]) +
+  annotate("rect", xmin = 200.5, xmax = 300.5, ymin = -Inf, ymax = Inf,
+           alpha = 0.5, fill = color_host_section["Pneumatophore"]) +
+  annotate("rect", xmin = 300.5, xmax = 400, ymin = -Inf, ymax = Inf,
+           alpha = 0.5, fill = color_host_section["Sediment"]) +
+  geom_line(aes(x = accum_curve_host_section$sites, y = accum_curve_host_section$richness)) +
+  lims(x = c(0,400))
+
+# For each host section for mangroves (exact)
+accum_curve_host_section_exact_fruit <- specaccum(otu_mangrove, subset = meta_mangrove$host_section == "Fruit", method = "exact")
+accum_curve_host_section_exact_leaf <- specaccum(otu_mangrove, subset = meta_mangrove$host_section == "Leaf", method = "exact")
+accum_curve_host_section_exact_pneumatophore <- specaccum(otu_mangrove, subset = meta_mangrove$host_section == "Pneumatophore", method = "exact")
+accum_curve_host_section_exact_sediment <- specaccum(otu_mangrove, subset = meta_mangrove$host_section == "Sediment", method = "exact")
+
+df <- data.frame(sites = 
+                   c(accum_curve_host_section_exact_sediment$sites,
+                     accum_curve_host_section_exact_pneumatophore$sites + 
+                       max(),
+                     accum_curve_host_section_exact_leaf$sites + 
+                       max(),
+                     accum_curve_host_section_exact_fruit$sites + 
+                       max()
+                     ),
+                 richness = 
+                   c(accum_curve_host_section_exact_sediment$richness,
+                     accum_curve_host_section_exact_pneumatophore$richness + 
+                       max(),
+                     accum_curve_host_section_exact_leaf$richness + 
+                       max(),
+                     accum_curve_host_section_exact_fruit$richness + 
+                       max()
+                     )
+                 )
+ggplot() + 
+  annotate("rect", xmin = 0, xmax = 100.5, ymin = -Inf, ymax = Inf,
+           alpha = 0.5, fill = color_host_section["Fruit"]) +
+  annotate("rect", xmin = 100.5, xmax = 200.5, ymin = -Inf, ymax = Inf,
+           alpha = 0.5, fill = color_host_section["Leaf"]) +
+  annotate("rect", xmin = 200.5, xmax = 300.5, ymin = -Inf, ymax = Inf,
+           alpha = 0.5, fill = color_host_section["Pneumatophore"]) +
+  annotate("rect", xmin = 300.5, xmax = 400, ymin = -Inf, ymax = Inf,
+           alpha = 0.5, fill = color_host_section["Sediment"]) +
+  geom_line(aes(x = df$sites, y = df$richness)) +
+  lims(x = c(0,400))
+
+# By host taxa for all samples (collector)
+unique(meta_full$host_taxa[order(meta_full$host_taxa)])
+accum_curve_host_taxa = specaccum(otu_full[order(meta_full$site),], method = "collector")
+```

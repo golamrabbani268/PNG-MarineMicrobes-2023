@@ -1,0 +1,157 @@
+---
+title: "08_analysis_alpha_diversity"
+author: "Golam Rabbani"
+output: html_notebook
+date: 2025-10-16
+---
+
+Objective: Compute and compare alpha diversity of samples by groups.
+
+```{r}
+getwd()
+setwd("./Working Files/")
+knitr::opts_knit$set(root.dir = normalizePath("./Working Files/"))
+```
+
+# Initializations
+
+```{r}
+# Loading libraries and software -----------------------------------------------
+
+library(phyloseq)
+packageVersion("phyloseq")
+library(vegan)
+packageVersion("vegan")
+
+# Loading data -----------------------------------------------------------------
+
+source("05_analysis_initializations.R")
+```
+
+# Calculate Shannon Diversity
+```{r}
+psra <- psra_full
+diversity <- data.frame(
+                  site = sample_data(psra)$site,
+                  host_species = sample_data(psra)$host_species,
+                  host_taxa = sample_data(psra)$host_taxa,
+                  host_section = sample_data(psra)$host_section,
+                  shannon = vegan::diversity(otu_table(psra, taxa_are_rows = FALSE), index = "shannon"),
+                  simpson = vegan::diversity(otu_table(psra, taxa_are_rows = FALSE), index = "simpson"),
+                  invsimpson = vegan::diversity(otu_table(psra, taxa_are_rows = FALSE), index = "invsimpson"),
+                  richness = t(colSums(decostand(otu_table(psra, taxa_are_rows = FALSE), method = "pa"))))
+write.csv(diversity, file = "./Outputs/08_diversity.csv", quote = FALSE)
+diversity
+
+## By site
+diversity %>% group_by(site) %>%
+  summarise(N = n(), Min = min(shannon), Max = max(shannon), Mean = mean(shannon), Median = median(shannon), SD = sd(shannon), )
+
+## By host species
+diversity %>% group_by(host_species) %>%
+  summarise(N = n(), Min = min(shannon), Max = max(shannon), Mean = mean(shannon), Median = median(shannon), SD = sd(shannon), )
+
+## By host taxa
+diversity %>% group_by(host_taxa) %>%
+  summarise(N = n(), Min = min(shannon), Max = max(shannon), Mean = mean(shannon), Median = median(shannon), SD = sd(shannon), )
+
+## By host section
+diversity %>% group_by(host_section) %>%
+  summarise(N = n(), Min = min(shannon), Max = max(shannon), Mean = mean(shannon), Median = median(shannon), SD = sd(shannon), )
+```
+
+# Boxplots on diversity by groups
+
+```{r}
+# For site
+ggplot(diversity, aes(x = site, y = shannon)) + 
+  geom_jitter(aes(color = site), alpha = 0.5, height = 0, size = 5) +
+  geom_boxplot(alpha = 0) + 
+  theme_bw() + 
+  theme(axis.text.x = element_blank(), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
+  labs(
+    x = "Site",
+    y = "Shannon Diversity",
+    color = "Site"
+    ) +
+  scale_color_manual(values = color_site)
+ggsave(filename = "./Outputs/08_shannon_diversity_site.svg", dpi = 300, width = 12, height = 10)
+
+# For site with host as color
+ggplot(diversity, aes(x = site, y = shannon)) + 
+  geom_jitter(aes(color = host_species), alpha = 0.5, height = 0, size = 5) +
+  geom_boxplot(alpha = 0) + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
+  labs(
+    x = "Site",
+    y = "Shannon Diversity",
+    color = "Host Species"
+    ) +
+  scale_color_manual(values = color_host_species)
+ggsave(filename = "./Outputs/08_shannon_diversity_site_host_species.svg", dpi = 300, width = 12, height = 10)
+
+# For host species
+ggplot(diversity, aes(x = host, y = shannon)) + 
+  geom_jitter(aes(color = host), alpha = 0.5, height = 0, size = 5) +
+  geom_boxplot(alpha = 0) + 
+  theme_bw() + 
+  theme(axis.text.x = element_blank(), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
+  labs(
+    x = "Host",
+    y = "Shannon Diversity",
+    color = "Host"
+    ) +
+  scale_color_manual(values = color_host_species)
+ggsave(filename = "./Outputs/08_shannon_diversity_host_species.svg", dpi = 300, width = 12, height = 10)
+
+# For host section by separate host species
+ggplot(diversity, aes(x = host_section, y = shannon)) + 
+  geom_jitter(aes(color = site, shape = host_section), alpha = 0.5, height = 0, size = 5) +
+  geom_boxplot(alpha = 0) + 
+  theme_bw() + 
+  theme(axis.text.x = element_blank(), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
+  labs(
+    x = "Host",
+    y = "Shannon Diversity",
+    color = "Site",
+    shape = "Host Section"
+    ) +
+  scale_color_manual(values = color_site) +
+  facet_wrap(vars(host_species))
+ggsave(filename = "./Outputs/08_shannon_diversity_host_section_facet_host_species.svg", dpi = 300, width = 12, height = 10)
+
+# For site for separate host section and species
+ggplot(diversity, aes(x = site, y = shannon)) + 
+  geom_jitter(aes(color = site, shape = host_species), alpha = 0.5, height = 0, size = 5) +
+  geom_boxplot(alpha = 0) + 
+  theme_bw() + 
+  theme(axis.text.x = element_blank(), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
+  labs(
+    x = "Host Species",
+    y = "Shannon Diversity",
+    color = "Site",
+    shape = "Host Species"
+    ) +
+  scale_color_manual(values = color_site) +
+  facet_wrap(vars(host_section))
+ggsave(filename = "./Outputs/08_shannon_diversity_site_facet_host_section.svg", dpi = 300, width = 12, height = 10)
+```
+
+```{r}
+## Statistical tests for Shannon diversity
+diversity$host_species_host_section <- paste0(diversity$host_species, "_", diversity$host_section)
+shannon_pairwise_comparions <- pairwise.wilcox.test(diversity$shannon, diversity$host_species_host_section, p.adjust.method = "bonferroni")
+write.csv(as.data.frame(shannon_pairwise_comparions$p.value), "./Outputs/08_shannon_diversity_wilcoxon_pairwise_tests_.csv")
+shannon_pairwise_comparions
+
+diversity$hostSection_site <- paste0(diversity$hostSection, "_", diversity$site)
+shannon_pairwise_comparions <- pairwise.wilcox.test(diversity$shannon, diversity$hostSection_site, p.adjust.method = "bonferroni")
+write.csv(as.data.frame(shannon_pairwise_comparions$p.value), "./Outputs/shannonDiversityWilcoxonPairwiseTests-hostSection_site-mangrove-PNG-16s.csv")
+shannon_pairwise_comparions
+
+diversity$hostSection_site_host <- paste0(diversity$hostSection, "_", diversity$site, "_", diversity$host)
+shannon_pairwise_comparions <- pairwise.wilcox.test(diversity$shannon, diversity$hostSection_site_host, p.adjust.method = "bonferroni")
+write.csv(as.data.frame(shannon_pairwise_comparions$p.value), "./Outputs/shannonDiversityWilcoxonPairwiseTests-hostSection_site_host-mangrove-PNG-16s.csv")
+
+```

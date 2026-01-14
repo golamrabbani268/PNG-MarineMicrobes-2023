@@ -1,0 +1,55 @@
+---
+title: "07_analysis_preston_model_for_estimated_coverage"
+author: "Golam Rabbani"
+output: html_notebook
+date: 2025-10-16
+---
+
+Objective: Estimating ASV coverage from our sequencing.
+
+```{r}
+getwd()
+setwd("./Working Files/")
+knitr::opts_knit$set(root.dir = normalizePath("./Working Files/"))
+```
+
+# Initializations
+
+```{r}
+# Loading libraries and software -----------------------------------------------
+
+library(phyloseq)
+packageVersion("phyloseq")
+library(vegan)
+packageVersion("vegan")
+
+# Loading data -----------------------------------------------------------------
+
+source("05_analysis_initializations.R")
+```
+
+```{r}
+otu_full <- data.frame(otu_table(ps_full))
+```
+
+# Preston model for estimated diversity coverage
+
+```{r}
+preston_mod_oct <- prestonfit(colSums(otu_full))
+preston_mod_ll <- prestondistr(colSums(otu_full))
+preston_mod_oct
+preston_mod_ll
+
+plot(preston_mod_oct)  
+lines(preston_mod_ll, line.col = "blue3")
+
+# Smoothed density
+den <- density(log2(colSums(otu_full)))
+lines(den$x, ncol(otu_full)*den$y, lwd=2)
+
+# Extrapolated richness
+veiledspec(preston_mod_oct)
+veiledspec(preston_mod_oct)[2] / veiledspec(preston_mod_oct)[1]
+veiledspec(preston_mod_ll)
+veiledspec(preston_mod_ll)[2] / veiledspec(preston_mod_ll)[1]
+```

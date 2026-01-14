@@ -5,7 +5,7 @@ output: html_notebook
 date: 2025-10-14
 ---
 
-Objective: Load in and prepare phyloseq objects to be used for analyses.
+Objective: Plot rarefaction curves to check for ASV coverage.
 
 ```{r}
 getwd()
@@ -20,5 +20,31 @@ knitr::opts_knit$set(root.dir = normalizePath("./Working Files/"))
 
 library(phyloseq)
 packageVersion("phyloseq")
+library(vegan)
+packageVersion("vegan")
+
+# Loading data -----------------------------------------------------------------
+
 source("05_analysis_initializations.R")
+```
+
+# Rarefaction curves
+
+```{r}
+# Function
+rarefactionCurve = function(ps, group, color_pal, filename_tag = "TAG"){
+  otu_table_matrix <- ps@otu_table
+  class(otu_table_matrix) <- "matrix"
+  rarefaction_df <- rarecurve(otu_table_matrix, step = 20, label = FALSE, tidy = TRUE)
+  rarefaction_df$group <- sample_data(ps)[rarefaction_df$Site,][[group]]
+  rarefaction_df <- rarefaction_df %>% group_by(Site)
+  rarefaction_curve <- ggplot(rarefaction_df) + geom_line(aes(x = Sample, y = Species, group = Site, color = group), size = 0.5, alpha = 0.5)
+  ggsave(rarefaction_curve, filename = paste0("./Outputs/06_rarefaction_curves-", group, "-", filename_tag, ".svg"), dpi = 300, width = 12, height = 8)
+  rarefaction_curve
+}
+```
+
+```{r}
+rarefactionCurve(ps_full, "site", color_site, filename_tag = "Full")
+rarefactionCurve(ps_full, "host", color_host, filename_tag = "Full")
 ```

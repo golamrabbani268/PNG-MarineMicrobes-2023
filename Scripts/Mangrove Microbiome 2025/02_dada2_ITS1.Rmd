@@ -1,0 +1,933 @@
+---
+title: "R Notebook"
+---
+
+# Script for dada2 processing
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Naming convention
+## large.variable.A-B.names
+## regular_variable_names
+## CONSTANT_NAMES
+## funtionNames
+## ClassNames
+
+setwd("./Working Files/")
+knitr::opts_knit$set(root.dir = normalizePath("./Working Files/")) 
+```
+
+```{r}
+# Initialising
+getwd()
+library(dada2); packageVersion("dada2")
+library(ggplot2); packageVersion("ggplot2")
+library(Biostrings); packageVersion("Biostrings")
+library(purrr); packageVersion("purrr")
+library(tidyverse); packageVersion("tidyverse")
+```
+
+# Mangrove SA
+```{r}
+getwd()
+path <- "../../04_Data/SA-ITS/Primer_Removed" # CHANGE ME to the directory containing the fastq files after unzipping.
+list.files(path)
+```
+```{r}
+# Forward and reverse fastq filenames have format: SAMPLENAME_1.fastq and SAMPLENAME_2.fastq
+fnFs <- sort(list.files(path, pattern="_1.fastq.gz", full.names = TRUE))
+fnRs <- sort(list.files(path, pattern="_2.fastq.gz", full.names = TRUE))
+# Extract sample names, assuming filenames have format: SAMPLENAME_1.fastq
+sample.names <- sapply(strsplit(basename(fnFs), "_1.fastq.gz"), `[`, 1)
+```
+
+## Quality Profiles
+```{r}
+plotQualityProfile(fnFs[11:12])
+ggsave("./Outputs/Quality plot F - SA-ITS1.png", width = 6, height = 4)
+plotQualityProfile(fnRs[11:12])
+ggsave("./Outputs/Quality plot R - SA-ITS1.png", width = 6, height = 4)
+```
+
+## Filtering and Trimming
+```{r}
+# Place filtered files in filtered/ subdirectory
+filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
+names(filtFs) <- sample.names
+names(filtRs) <- sample.names
+
+maxEER1 <- 2 # Default 2
+maxEER2 <- 2 # Default 2
+
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, 
+                     maxN=0, maxEE=c(maxEER1,maxEER2), truncQ=2, rm.phix=TRUE,
+                     compress=TRUE, multithread=TRUE) # On Windows set multithread=FALSE
+head(out)
+```
+
+## Learn the Error Rates
+```{r}
+errF <- learnErrors(filtFs, multithread=TRUE) 
+errR <- learnErrors(filtRs, multithread=TRUE) 
+plotErrors(errF, nominalQ=FALSE)
+ggsave("./Outputs/ErrF plot - SA-ITS1.png", width = 6, height = 4)
+plotErrors(errR, nominalQ=FALSE)
+ggsave("./Outputs/ErrR plot - SA-ITS1.png", width = 6, height = 4)
+```
+
+## Dereplication, Sample Inference, and Merging Reads
+```{r}
+# Loop taking care of dereplication, sample inference and merging paired reads
+dadaFs <- vector("list", length(sample.names))
+dadaRs <- vector("list", length(sample.names))
+mergers <- vector("list", length(sample.names))
+names(dadaFs) <- sample.names
+names(dadaRs) <- sample.names
+names(mergers) <- sample.names
+for (sam in sample.names){
+  cat("Processing:", sam, "\n")
+  derepF <- derepFastq(filtFs[[sam]], verbose = TRUE)
+  derepR <- derepFastq(filtRs[[sam]], verbose = TRUE)
+  dadaFs[[sam]] <- dada(derepF, err=errF, multithread = TRUE)
+  dadaRs[[sam]] <- dada(derepR, err=errR, multithread = TRUE)
+  mergers[[sam]] <- mergePairs(dadaFs[[sam]], derepF, dadaRs[[sam]], derepR, verbose = TRUE)
+}
+head(mergers[[1]])
+```
+
+## Construct sequence table
+```{r}
+seqtab <- makeSequenceTable(mergers)
+dim(seqtab) # 368 24360
+saveRDS(seqtab, "./Outputs/seqtabs/seqtab_raw_SA-ITS1.RDS")
+
+## Inspect distribution of sequence lengths
+table(nchar(getSequences(seqtab)))
+```
+
+## Remove chimeras
+```{r}
+seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE) 
+dim(seqtab.nochim)
+saveRDS(seqtab.nochim, "./Outputs/seqtabs/seqtab_nochim_SA-ITS1.RDS")
+
+sum(seqtab.nochim)/sum(seqtab)
+```
+
+## Track reads through pipeline
+```{r}
+getN <- function(x) sum(getUniques(x))
+track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
+# If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
+colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
+rownames(track) <- sample.names
+track
+write.csv(track, file = "./Outputs/dada2track_SA-ITS1.csv")
+```
+```{r}
+# Removing objects not required ahead to conserve RAM because some of the next steps are memory intensive
+rm(dadaFs)
+rm(dadaRs)
+rm(derepF)
+rm(derepR)
+rm(errF)
+rm(errR)
+rm(mergers)
+rm(out)
+rm(seqtab)
+```
+```{r}
+# Resume Point
+seqtab.nochim <- readRDS("./Outputs/Mangrove_ITS1/seqtabs/seqtab_nochim_SA-ITS1.RDS")
+```
+
+## Import metadata
+```{r}
+## Update this code section according to own run.
+meta = read.csv("../../Resources/metadata-ITS1.csv", stringsAsFactors = FALSE)
+row.names(meta) <- NULL
+row.names(meta) <- meta$sampleName
+row.names(seqtab.nochim)
+
+# reorder metadata
+meta = meta[order(row.names(meta)),]
+meta = meta[rownames(meta) %in% rownames(seqtab.nochim),]
+identical(rownames(meta), rownames(seqtab.nochim))
+```
+
+## Remove contaminants using controls
+```{r}
+library(decontam); packageVersion("decontam")
+
+# Find control samples (extraction negatives)
+meta$controls <- meta$site == "Blank"
+
+# Find contaminants
+contams = isContaminant(seqtab.nochim, neg = meta$controls, normalize = TRUE)
+table(contams$contaminant)
+write.csv(contams, file = "./Outputs/likely_contaminants-SA-ITS1.csv", row.names = TRUE)
+
+# Remove them
+seqtab.nochim = seqtab.nochim[meta$controls == FALSE,]
+meta = meta[meta$controls == FALSE,]
+
+saveRDS(meta, file = "./Outputs/final_meta-SA-ITS1.RDS")
+```
+
+## Assign Taxonomy
+```{r}
+# Remove all seqs with fewer than 100 nucleotides ####
+keeper_asvs <- nchar(names(as.data.frame(seqtab.nochim))) > 99
+seqtab.lengthfiltered <- seqtab.nochim[,keeper_asvs]
+
+# Assigning taxa
+#taxa <- assignTaxonomy(seqtab.lengthfiltered, "../../04_Data/tax/sh_general_release_dynamic_19.02.2025.fasta", multithread=TRUE,verbose=TRUE)
+
+taxa <- assignTaxonomy(seqtab.lengthfiltered, "../../04_Data/tax/sh_general_release_dynamic_all_19.02.2025.fasta", multithread=TRUE,verbose=TRUE, tryRC=TRUE)
+
+write.csv(as.data.frame(seqtab.lengthfiltered), file = "./Outputs/SeqTable_no-chimera_no-contams-SA-ITS1.csv", row.names = TRUE, quote = FALSE)
+saveRDS(seqtab.nochim, file = "./Outputs/seqtabs/nochim_dada2_seqtable-SA-ITS1.RDS")
+saveRDS(seqtab.lengthfiltered, file = "./Outputs/seqtabs/clean_dada2_seqtable-SA-ITS1.RDS")
+saveRDS(taxa, file = "./Outputs/UNITE_Taxonomy_from_dada2-SA-ITS1.RDS")
+```
+
+```{r}
+seqtab.lengthfiltered <- readRDS("./Outputs/seqtabs/clean_dada2_seqtable-SA-ITS1.RDS")
+taxa <- readRDS("./Outputs/UNITE_Taxonomy_from_dada2-SA-ITS1.RDS")
+meta <- readRDS("./Outputs/final_meta-SA-ITS1.RDS")
+
+# Hand off to Phyloseq
+library(phyloseq)
+otu <- otu_table(seqtab.lengthfiltered,taxa_are_rows = FALSE)
+tax <- tax_table(taxa)
+met <- sample_data(meta)
+row.names(met) <- row.names(meta)
+
+ps <- phyloseq(otu,met,tax)
+
+# Removing non-fungi samples
+ps <- subset_taxa(ps, Kingdom == "k__Fungi")
+onlyfungi <- rowSums(otu_table(ps))
+
+ps <- subset_taxa(ps, taxa_sums(ps) > 0)
+ps <- subset_samples(ps, sample_sums(ps) > 0)
+nonempty <- rowSums(otu_table(ps))
+ps
+
+# Save DNA sequences apart from rownames (from subsetted ps object)
+seqs <- taxa_names(ps)
+seqs <- DNAStringSet(seqs)
+saveRDS(seqs,"./Outputs/ASV_reference_sequences-sa-PNG-ITS.RDS")
+
+pretty_names <- paste("FungalASV",1:length(taxa_names(ps)),":",
+                      tax_table(ps)[,2],
+                      tax_table(ps)[,3],
+                      tax_table(ps)[,4],
+                      tax_table(ps)[,5],
+                      tax_table(ps)[,6],
+                      tax_table(ps)[,7], sep="_") %>%
+  str_remove("k__") %>% str_remove("p__") %>% str_remove("c__") %>% str_remove("o__") %>% str_remove("f__") %>% str_remove("g__") %>% str_remove("s__") %>%
+  str_replace(pattern = "_:_",replacement = ": ")
+
+df <- data.frame(TaxaName=pretty_names,Sequence=taxa_names(ps))
+saveRDS(df,"./Outputs/SequenceNames_and_Taxonomy-sa-PNG-ITS.RDS")
+
+# Save RDS object for Phyloseq
+saveRDS(ps, file = "./Outputs/clean_phyloseq_object-sa-PNG-ITS.RDS")
+```
+
+## Adding Read Counts for new steps
+```{r}
+nochim <- rowSums(seqtab.nochim)
+lengthfiltered <- rowSums(seqtab.lengthfiltered)
+onlyfungi
+nonempty
+netloss <- (nochim-nonempty)/nochim
+track_decontam <- data.frame(nochim, lengthfiltered, onlyfungi, nonempty, netloss)
+write.csv(track_decontam, file = "./Outputs/read_counts_at_each_step_after_decontam-SA-PNG-ITS.csv", row.names = TRUE)
+track_decontam
+```
+
+
+
+
+
+
+# Mangrove AA
+```{r}
+getwd()
+path <- "../../04_Data/AA-ITS/Primer_Removed" # CHANGE ME to the directory containing the fastq files after unzipping.
+list.files(path)
+```
+```{r}
+# Forward and reverse fastq filenames have format: SAMPLENAME_1.fastq and SAMPLENAME_2.fastq
+fnFs <- sort(list.files(path, pattern="_1.fastq.gz", full.names = TRUE))
+fnRs <- sort(list.files(path, pattern="_2.fastq.gz", full.names = TRUE))
+# Extract sample names, assuming filenames have format: SAMPLENAME_1.fastq
+sample.names <- sapply(strsplit(basename(fnFs), "_1.fastq.gz"), `[`, 1)
+```
+
+## Quality Profiles
+```{r}
+plotQualityProfile(fnFs[11:12])
+ggsave("./Outputs/Quality plot F - AA-ITS1.png", width = 6, height = 4)
+plotQualityProfile(fnRs[11:12])
+ggsave("./Outputs/Quality plot R - AA-ITS1.png", width = 6, height = 4)
+```
+
+## Filtering and Trimming
+```{r}
+# Place filtered files in filtered/ subdirectory
+filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
+names(filtFs) <- sample.names
+names(filtRs) <- sample.names
+
+maxEER1 <- 2 # Default 2
+maxEER2 <- 2 # Default 2
+
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, 
+                     maxN=0, maxEE=c(maxEER1,maxEER2), truncQ=2, rm.phix=TRUE,
+                     compress=TRUE, multithread=TRUE) # On Windows set multithread=FALSE
+head(out)
+```
+
+## Learn the Error Rates
+```{r}
+errF <- learnErrors(filtFs, multithread=TRUE) 
+errR <- learnErrors(filtRs, multithread=TRUE) 
+plotErrors(errF, nominalQ=FALSE)
+ggsave("./Outputs/ErrF plot - AA-ITS1.png", width = 6, height = 4)
+plotErrors(errR, nominalQ=FALSE)
+ggsave("./Outputs/ErrR plot - AA-ITS1.png", width = 6, height = 4)
+```
+
+## Dereplication, Sample Inference, and Merging Reads
+```{r}
+# Loop taking care of dereplication, sample inference and merging paired reads
+dadaFs <- vector("list", length(sample.names))
+dadaRs <- vector("list", length(sample.names))
+mergers <- vector("list", length(sample.names))
+names(dadaFs) <- sample.names
+names(dadaRs) <- sample.names
+names(mergers) <- sample.names
+for (sam in sample.names){
+  cat("Processing:", sam, "\n")
+  derepF <- derepFastq(filtFs[[sam]], verbose = TRUE)
+  derepR <- derepFastq(filtRs[[sam]], verbose = TRUE)
+  dadaFs[[sam]] <- dada(derepF, err=errF, multithread = TRUE)
+  dadaRs[[sam]] <- dada(derepR, err=errR, multithread = TRUE)
+  mergers[[sam]] <- mergePairs(dadaFs[[sam]], derepF, dadaRs[[sam]], derepR, verbose = TRUE)
+}
+head(mergers[[1]])
+```
+
+## Construct sequence table
+```{r}
+seqtab <- makeSequenceTable(mergers)
+dim(seqtab) #
+saveRDS(seqtab, "./Outputs/seqtabs/seqtab_raw_AA-ITS1.RDS")
+
+## Inspect distribution of sequence lengths
+table(nchar(getSequences(seqtab)))
+```
+
+## Remove chimeras
+```{r}
+seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE) 
+dim(seqtab.nochim)
+saveRDS(seqtab.nochim, "./Outputs/seqtabs/seqtab_nochim_AA-ITS1.RDS")
+
+sum(seqtab.nochim)/sum(seqtab)
+```
+
+## Track reads through pipeline
+```{r}
+getN <- function(x) sum(getUniques(x))
+track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
+# If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
+colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
+rownames(track) <- sample.names
+track
+write.csv(track, file = "./Outputs/dada2track_AA-ITS1.csv")
+```
+```{r}
+# Removing objects not required ahead to conserve RAM because some of the next steps are memory intensive
+rm(dadaFs)
+rm(dadaRs)
+rm(derepF)
+rm(derepR)
+rm(errF)
+rm(errR)
+rm(mergers)
+rm(out)
+rm(seqtab)
+```
+
+```{r}
+# Resume Point
+seqtab.nochim <- readRDS("./Outputs/Mangrove_ITS1/seqtabs/seqtab_nochim_AA-ITS1.RDS")
+```
+
+## Import metadata
+```{r}
+## Update this code section according to own run.
+meta = read.csv("../../Resources/metadata-ITS1.csv", stringsAsFactors = FALSE)
+row.names(meta) <- NULL
+row.names(meta) <- meta$sampleName
+row.names(seqtab.nochim)
+
+# reorder metadata
+meta = meta[order(row.names(meta)),]
+meta = meta[rownames(meta) %in% rownames(seqtab.nochim),]
+identical(rownames(meta), rownames(seqtab.nochim))
+```
+
+## Remove contaminants using controls
+```{r}
+library(decontam); packageVersion("decontam")
+
+# Find control samples (extraction negatives)
+meta$controls <- meta$site == "Blank"
+
+# Find contaminants
+contams = isContaminant(seqtab.nochim, neg = meta$controls, normalize = TRUE)
+table(contams$contaminant)
+write.csv(contams, file = "./Outputs/likely_contaminants-AA-ITS1.csv", row.names = TRUE)
+
+# Remove them
+seqtab.nochim = seqtab.nochim[meta$controls == FALSE,]
+meta = meta[meta$controls == FALSE,]
+
+saveRDS(meta, file = "./Outputs/final_meta-AA-ITS1.RDS")
+```
+
+## Assign Taxonomy
+```{r}
+# Remove all seqs with fewer than 100 nucleotides ####
+keeper_asvs <- nchar(names(as.data.frame(seqtab.nochim))) > 99
+seqtab.lengthfiltered <- seqtab.nochim[,keeper_asvs]
+
+# Assigning taxa
+#taxa <- assignTaxonomy(seqtab.lengthfiltered, "../../04_Data/tax/sh_general_release_dynamic_19.02.2025.fasta", multithread=TRUE,verbose=TRUE)
+
+taxa <- assignTaxonomy(seqtab.lengthfiltered, "../../04_Data/tax/sh_general_release_dynamic_all_19.02.2025.fasta", multithread=TRUE,verbose=TRUE, tryRC=TRUE)
+
+write.csv(as.data.frame(seqtab.lengthfiltered), file = "./Outputs/SeqTable_no-chimera_no-contams-AA-ITS1.csv", row.names = TRUE, quote = FALSE)
+saveRDS(seqtab.nochim, file = "./Outputs/seqtabs/nochim_dada2_seqtable-AA-ITS1.RDS")
+saveRDS(seqtab.lengthfiltered, file = "./Outputs/seqtabs/clean_dada2_seqtable-AA-ITS1.RDS")
+saveRDS(taxa, file = "./Outputs/UNITE_Taxonomy_from_dada2-AA-ITS1.RDS")
+```
+
+```{r}
+seqtab.lengthfiltered <- readRDS("./Outputs/seqtabs/clean_dada2_seqtable-AA-ITS1.RDS")
+taxa <- readRDS("./Outputs/UNITE_Taxonomy_from_dada2-AA-ITS1.RDS")
+meta <- readRDS("./Outputs/final_meta-AA-ITS1.RDS")
+
+# Hand off to Phyloseq
+library(phyloseq)
+otu <- otu_table(seqtab.lengthfiltered,taxa_are_rows = FALSE)
+tax <- tax_table(taxa)
+met <- sample_data(meta)
+row.names(met) <- row.names(meta)
+
+ps <- phyloseq(otu,met,tax)
+
+# Removing non-fungi samples
+ps <- subset_taxa(ps, Kingdom == "k__Fungi")
+onlyfungi <- rowSums(otu_table(ps))
+
+ps <- subset_taxa(ps, taxa_sums(ps) > 0)
+ps <- subset_samples(ps, sample_sums(ps) > 0)
+nonempty <- rowSums(otu_table(ps))
+ps
+
+# Save DNA sequences apart from rownames (from subsetted ps object)
+seqs <- taxa_names(ps)
+seqs <- DNAStringSet(seqs)
+saveRDS(seqs,"./Outputs/ASV_reference_sequences-aa-PNG-ITS.RDS")
+
+pretty_names <- paste("FungalASV",1:length(taxa_names(ps)),":",
+                      tax_table(ps)[,2],
+                      tax_table(ps)[,3],
+                      tax_table(ps)[,4],
+                      tax_table(ps)[,5],
+                      tax_table(ps)[,6],
+                      tax_table(ps)[,7], sep="_") %>%
+  str_remove("k__") %>% str_remove("p__") %>% str_remove("c__") %>% str_remove("o__") %>% str_remove("f__") %>% str_remove("g__") %>% str_remove("s__") %>%
+  str_replace(pattern = "_:_",replacement = ": ")
+
+df <- data.frame(TaxaName=pretty_names,Sequence=taxa_names(ps))
+saveRDS(df,"./Outputs/SequenceNames_and_Taxonomy-aa-PNG-ITS.RDS")
+
+# Save RDS object for Phyloseq
+saveRDS(ps, file = "./Outputs/clean_phyloseq_object-aa-PNG-ITS.RDS")
+```
+
+## Adding Read Counts for new steps
+```{r}
+nochim <- rowSums(seqtab.nochim)
+lengthfiltered <- rowSums(seqtab.lengthfiltered)
+onlyfungi
+nonempty
+netloss <- (nochim-nonempty)/nochim
+track_decontam <- data.frame(nochim, lengthfiltered, onlyfungi, nonempty, netloss)
+write.csv(track_decontam, file = "./Outputs/read_counts_at_each_step_after_decontam-AA-PNG-ITS.csv", row.names = TRUE)
+track_decontam
+```
+
+
+
+
+
+
+# Seagrass EA
+```{r}
+getwd()
+path <- "../../04_Data/EA-ITS/Primer_Removed" # CHANGE ME to the directory containing the fastq files after unzipping.
+list.files(path)
+```
+```{r}
+# Forward and reverse fastq filenames have format: SAMPLENAME_1.fastq and SAMPLENAME_2.fastq
+fnFs <- sort(list.files(path, pattern="_1.fastq.gz", full.names = TRUE))
+fnRs <- sort(list.files(path, pattern="_2.fastq.gz", full.names = TRUE))
+# Extract sample names, assuming filenames have format: SAMPLENAME_1.fastq
+sample.names <- sapply(strsplit(basename(fnFs), "_1.fastq.gz"), `[`, 1)
+```
+
+## Quality Profiles
+```{r}
+plotQualityProfile(fnFs[11:12])
+ggsave("./Outputs/Quality plot F - EA-ITS1.png", width = 6, height = 4)
+plotQualityProfile(fnRs[11:12])
+ggsave("./Outputs/Quality plot R - EA-ITS1.png", width = 6, height = 4)
+```
+
+## Filtering and Trimming
+```{r}
+# Place filtered files in filtered/ subdirectory
+filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
+names(filtFs) <- sample.names
+names(filtRs) <- sample.names
+
+maxEER1 <- 2 # Default 2
+maxEER2 <- 2 # Default 2
+
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, 
+                     maxN=0, maxEE=c(maxEER1,maxEER2), truncQ=2, rm.phix=TRUE,
+                     compress=TRUE, multithread=TRUE) # On Windows set multithread=FALSE
+head(out)
+```
+
+## Learn the Error Rates
+```{r}
+errF <- learnErrors(filtFs, multithread=TRUE) 
+errR <- learnErrors(filtRs, multithread=TRUE) 
+plotErrors(errF, nominalQ=FALSE)
+ggsave("./Outputs/ErrF plot - EA-PNG-ITS.png", width = 6, height = 4)
+plotErrors(errR, nominalQ=FALSE)
+ggsave("./Outputs/ErrR plot - EA-PNG-ITS.png", width = 6, height = 4)
+```
+
+## Dereplication, Sample Inference, and Merging Reads
+```{r}
+# Loop taking care of dereplication, sample inference and merging paired reads
+dadaFs <- vector("list", length(sample.names))
+dadaRs <- vector("list", length(sample.names))
+mergers <- vector("list", length(sample.names))
+names(dadaFs) <- sample.names
+names(dadaRs) <- sample.names
+names(mergers) <- sample.names
+for (sam in sample.names){
+  cat("Processing:", sam, "\n")
+  derepF <- derepFastq(filtFs[[sam]], verbose = TRUE)
+  derepR <- derepFastq(filtRs[[sam]], verbose = TRUE)
+  dadaFs[[sam]] <- dada(derepF, err=errF, multithread = TRUE)
+  dadaRs[[sam]] <- dada(derepR, err=errR, multithread = TRUE)
+  mergers[[sam]] <- mergePairs(dadaFs[[sam]], derepF, dadaRs[[sam]], derepR, verbose = TRUE)
+}
+head(mergers[[1]])
+```
+
+## Construct sequence table
+```{r}
+seqtab <- makeSequenceTable(mergers)
+dim(seqtab) # 
+saveRDS(seqtab, "./Outputs/seqtabs/seqtab_raw_EA-ITS1.RDS")
+
+## Inspect distribution of sequence lengths
+table(nchar(getSequences(seqtab)))
+```
+
+## Remove chimeras
+```{r}
+seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE) 
+dim(seqtab.nochim)
+saveRDS(seqtab.nochim, "./Outputs/seqtabs/seqtab_nochim_EA-ITS1.RDS")
+
+sum(seqtab.nochim)/sum(seqtab)
+```
+
+## Track reads through pipeline
+```{r}
+getN <- function(x) sum(getUniques(x))
+track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
+# If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
+colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
+rownames(track) <- sample.names
+track
+write.csv(track, file = "./Outputs/dada2track_EA-ITS1.csv")
+```
+```{r}
+# Removing objects not required ahead to conserve RAM because some of the next steps are memory intensive
+rm(dadaFs)
+rm(dadaRs)
+rm(derepF)
+rm(derepR)
+rm(errF)
+rm(errR)
+rm(mergers)
+rm(out)
+rm(seqtab)
+```
+
+```{r}
+# Resume Point
+seqtab.nochim <- readRDS("./Outputs/Seagrass_ITS/seqtabs/seqtab_nochim_EA-ITS1.RDS")
+```
+
+## Import metadata
+```{r}
+## Update this code section according to own run.
+meta = read.csv("../../Resources/metadata-ITS1.csv", stringsAsFactors = FALSE)
+row.names(meta) <- NULL
+row.names(meta) <- meta$sampleName
+row.names(seqtab.nochim)
+
+# reorder metadata
+meta = meta[order(row.names(meta)),]
+meta = meta[rownames(meta) %in% rownames(seqtab.nochim),]
+identical(rownames(meta), rownames(seqtab.nochim))
+```
+
+## Remove contaminants using controls
+```{r}
+library(decontam); packageVersion("decontam")
+
+# Find control samples (extraction negatives)
+meta$controls <- meta$site == "Blank"
+
+# Find contaminants
+contams = isContaminant(seqtab.nochim, neg = meta$controls, normalize = TRUE)
+table(contams$contaminant)
+write.csv(contams, file = "./Outputs/likely_contaminants-EA-ITS1.csv", row.names = TRUE)
+
+# Remove them
+seqtab.nochim = seqtab.nochim[meta$controls == FALSE,]
+meta = meta[meta$controls == FALSE,]
+
+saveRDS(meta, file = "./Outputs/final_meta-EA-ITS1.RDS")
+```
+
+## Assign Taxonomy
+```{r}
+# Remove all seqs with fewer than 100 nucleotides ####
+keeper_asvs <- nchar(names(as.data.frame(seqtab.nochim))) > 99
+seqtab.lengthfiltered <- seqtab.nochim[,keeper_asvs]
+
+# Assigning taxa
+#taxa <- assignTaxonomy(seqtab.lengthfiltered, "../../04_Data/tax/sh_general_release_dynamic_19.02.2025.fasta", multithread=TRUE,verbose=TRUE)
+
+taxa <- assignTaxonomy(seqtab.lengthfiltered, "../../04_Data/tax/sh_general_release_dynamic_all_19.02.2025.fasta", multithread=TRUE,verbose=TRUE, tryRC=TRUE)
+
+write.csv(as.data.frame(seqtab.lengthfiltered), file = "./Outputs/SeqTable_no-chimera_no-contams-EA-ITS1.csv", row.names = TRUE, quote = FALSE)
+saveRDS(seqtab.nochim, file = "./Outputs/seqtabs/nochim_dada2_seqtable-EA-ITS1.RDS")
+saveRDS(seqtab.lengthfiltered, file = "./Outputs/seqtabs/clean_dada2_seqtable-EA-ITS1.RDS")
+saveRDS(taxa, file = "./Outputs/UNITE_Taxonomy_from_dada2-EA-ITS1.RDS")
+```
+
+```{r}
+seqtab.lengthfiltered <- readRDS("./Outputs/seqtabs/clean_dada2_seqtable-EA-ITS1.RDS")
+taxa <- readRDS("./Outputs/UNITE_Taxonomy_from_dada2-EA-ITS1.RDS")
+meta <- readRDS("./Outputs/final_meta-EA-ITS1.RDS")
+
+# Hand off to Phyloseq
+library(phyloseq)
+otu <- otu_table(seqtab.lengthfiltered,taxa_are_rows = FALSE)
+tax <- tax_table(taxa)
+met <- sample_data(meta)
+row.names(met) <- row.names(meta)
+
+ps <- phyloseq(otu,met,tax)
+
+# Removing non-fungi samples
+ps <- subset_taxa(ps, Kingdom == "k__Fungi")
+onlyfungi <- rowSums(otu_table(ps))
+
+ps <- subset_taxa(ps, taxa_sums(ps) > 0)
+ps <- subset_samples(ps, sample_sums(ps) > 0)
+nonempty <- rowSums(otu_table(ps))
+ps
+
+# Save DNA sequences apart from rownames (from subsetted ps object)
+seqs <- taxa_names(ps)
+seqs <- DNAStringSet(seqs)
+saveRDS(seqs,"./Outputs/ASV_reference_sequences-ea-PNG-ITS.RDS")
+
+pretty_names <- paste("FungalASV",1:length(taxa_names(ps)),":",
+                      tax_table(ps)[,2],
+                      tax_table(ps)[,3],
+                      tax_table(ps)[,4],
+                      tax_table(ps)[,5],
+                      tax_table(ps)[,6],
+                      tax_table(ps)[,7], sep="_") %>%
+  str_remove("k__") %>% str_remove("p__") %>% str_remove("c__") %>% str_remove("o__") %>% str_remove("f__") %>% str_remove("g__") %>% str_remove("s__") %>%
+  str_replace(pattern = "_:_",replacement = ": ")
+
+df <- data.frame(TaxaName=pretty_names,Sequence=taxa_names(ps))
+saveRDS(df,"./Outputs/SequenceNames_and_Taxonomy-ea-PNG-ITS.RDS")
+
+# Save RDS object for Phyloseq
+saveRDS(ps, file = "./Outputs/clean_phyloseq_object-ea-PNG-ITS.RDS")
+```
+
+## Adding Read Counts for new steps
+```{r}
+nochim <- rowSums(seqtab.nochim)
+lengthfiltered <- rowSums(seqtab.lengthfiltered)
+onlyfungi
+nonempty
+netloss <- (nochim-nonempty)/nochim
+track_decontam <- data.frame(nochim, lengthfiltered, onlyfungi, nonempty, netloss)
+write.csv(track_decontam, file = "./Outputs/read_counts_at_each_step_after_decontam-EA-PNG-ITS.csv", row.names = TRUE)
+track_decontam
+```
+
+
+
+# Seagrass TH
+```{r}
+getwd()
+path <- "../../04_Data/TH-ITS/Primer_Removed" # CHANGE ME to the directory containing the fastq files after unzipping.
+list.files(path)
+```
+```{r}
+# Forward and reverse fastq filenames have format: SAMPLENAME_1.fastq and SAMPLENAME_2.fastq
+fnFs <- sort(list.files(path, pattern="_1.fastq.gz", full.names = TRUE))
+fnRs <- sort(list.files(path, pattern="_2.fastq.gz", full.names = TRUE))
+# Extract sample names, assuming filenames have format: SAMPLENAME_1.fastq
+sample.names <- sapply(strsplit(basename(fnFs), "_1.fastq.gz"), `[`, 1)
+```
+
+## Quality Profiles
+```{r}
+plotQualityProfile(fnFs[11:12])
+ggsave("./Outputs/Quality plot F - TH-ITS1.png", width = 6, height = 4)
+plotQualityProfile(fnRs[11:12])
+ggsave("./Outputs/Quality plot R - TH-ITS1.png", width = 6, height = 4)
+```
+
+## Filtering and Trimming
+```{r}
+# Place filtered files in filtered/ subdirectory
+filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
+names(filtFs) <- sample.names
+names(filtRs) <- sample.names
+
+maxEER1 <- 2 # Default 2
+maxEER2 <- 2 # Default 2
+
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, 
+                     maxN=0, maxEE=c(maxEER1,maxEER2), truncQ=2, rm.phix=TRUE,
+                     compress=TRUE, multithread=TRUE) # On Windows set multithread=FALSE
+head(out)
+```
+
+## Learn the Error Rates
+```{r}
+errF <- learnErrors(filtFs, multithread=TRUE) 
+errR <- learnErrors(filtRs, multithread=TRUE) 
+plotErrors(errF, nominalQ=FALSE)
+ggsave("./Outputs/ErrF plot - TH-ITS1.png", width = 6, height = 4)
+plotErrors(errR, nominalQ=FALSE)
+ggsave("./Outputs/ErrR plot - TH-ITS1.png", width = 6, height = 4)
+```
+
+## Dereplication, Sample Inference, and Merging Reads
+```{r}
+# Loop taking care of dereplication, sample inference and merging paired reads
+dadaFs <- vector("list", length(sample.names))
+dadaRs <- vector("list", length(sample.names))
+mergers <- vector("list", length(sample.names))
+names(dadaFs) <- sample.names
+names(dadaRs) <- sample.names
+names(mergers) <- sample.names
+for (sam in sample.names){
+  cat("Processing:", sam, "\n")
+  derepF <- derepFastq(filtFs[[sam]], verbose = TRUE)
+  derepR <- derepFastq(filtRs[[sam]], verbose = TRUE)
+  dadaFs[[sam]] <- dada(derepF, err=errF, multithread = TRUE)
+  dadaRs[[sam]] <- dada(derepR, err=errR, multithread = TRUE)
+  mergers[[sam]] <- mergePairs(dadaFs[[sam]], derepF, dadaRs[[sam]], derepR, verbose = TRUE)
+}
+head(mergers[[1]])
+```
+
+## Construct sequence table
+```{r}
+seqtab <- makeSequenceTable(mergers)
+dim(seqtab) # 
+saveRDS(seqtab, "./Outputs/seqtabs/seqtab_raw_TH-ITS1.RDS")
+
+## Inspect distribution of sequence lengths
+table(nchar(getSequences(seqtab)))
+```
+
+## Remove chimeras
+```{r}
+seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE) 
+dim(seqtab.nochim)
+saveRDS(seqtab.nochim, "./Outputs/seqtabs/seqtab_nochim_TH-ITS1.RDS")
+
+sum(seqtab.nochim)/sum(seqtab)
+```
+
+## Track reads through pipeline
+```{r}
+getN <- function(x) sum(getUniques(x))
+track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
+# If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
+colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
+rownames(track) <- sample.names
+track
+write.csv(track, file = "./Outputs/dada2track_TH-ITS1.csv")
+```
+```{r}
+# Removing objects not required ahead to conserve RAM because some of the next steps are memory intensive
+rm(dadaFs)
+rm(dadaRs)
+rm(derepF)
+rm(derepR)
+rm(errF)
+rm(errR)
+rm(mergers)
+rm(out)
+rm(seqtab)
+```
+
+```{r}
+# Resume Point
+seqtab.nochim <- readRDS("./Outputs/Seagrass_ITS/seqtabs/seqtab_nochim_TH-ITS1.RDS")
+```
+
+## Import metadata
+```{r}
+## Update this code section according to own run.
+meta = read.csv("../../Resources/metadata-ITS1.csv", stringsAsFactors = FALSE)
+row.names(meta) <- NULL
+row.names(meta) <- meta$sampleName
+row.names(seqtab.nochim)
+
+# reorder metadata
+meta = meta[order(row.names(meta)),]
+meta = meta[rownames(meta) %in% rownames(seqtab.nochim),]
+identical(rownames(meta), rownames(seqtab.nochim))
+```
+
+## Remove contaminants using controls
+```{r}
+library(decontam); packageVersion("decontam")
+
+# Find control samples (extraction negatives)
+meta$controls <- meta$site == "Blank"
+
+# Find contaminants
+contams = isContaminant(seqtab.nochim, neg = meta$controls, normalize = TRUE)
+table(contams$contaminant)
+write.csv(contams, file = "./Outputs/likely_contaminants-TH-ITS1.csv", row.names = TRUE)
+
+# Remove them
+seqtab.nochim = seqtab.nochim[meta$controls == FALSE,]
+meta = meta[meta$controls == FALSE,]
+
+saveRDS(meta, file = "./Outputs/final_meta-TH-ITS1.RDS")
+```
+
+## Assign Taxonomy
+```{r}
+# Remove all seqs with fewer than 100 nucleotides ####
+keeper_asvs <- nchar(names(as.data.frame(seqtab.nochim))) > 99
+seqtab.lengthfiltered <- seqtab.nochim[,keeper_asvs]
+
+# Assigning taxa
+#taxa <- assignTaxonomy(seqtab.lengthfiltered, "../../04_Data/tax/sh_general_release_dynamic_19.02.2025.fasta", multithread=TRUE,verbose=TRUE)
+
+taxa <- assignTaxonomy(seqtab.lengthfiltered, "../../04_Data/tax/sh_general_release_dynamic_all_19.02.2025.fasta", multithread=TRUE,verbose=TRUE, tryRC=TRUE)
+
+write.csv(as.data.frame(seqtab.lengthfiltered), file = "./Outputs/SeqTable_no-chimera_no-contams-TH-ITS1.csv", row.names = TRUE, quote = FALSE)
+saveRDS(seqtab.nochim, file = "./Outputs/seqtabs/nochim_dada2_seqtable-TH-ITS1.RDS")
+saveRDS(seqtab.lengthfiltered, file = "./Outputs/seqtabs/clean_dada2_seqtable-TH-ITS1.RDS")
+saveRDS(taxa, file = "./Outputs/UNITE_Taxonomy_from_dada2-TH-ITS1.RDS")
+```
+
+```{r}
+seqtab.lengthfiltered <- readRDS("./Outputs/seqtabs/clean_dada2_seqtable-TH-ITS1.RDS")
+taxa <- readRDS("./Outputs/UNITE_Taxonomy_from_dada2-TH-ITS1.RDS")
+meta <- readRDS("./Outputs/final_meta-TH-ITS1.RDS")
+
+# Hand off to Phyloseq
+library(phyloseq)
+otu <- otu_table(seqtab.lengthfiltered,taxa_are_rows = FALSE)
+tax <- tax_table(taxa)
+met <- sample_data(meta)
+row.names(met) <- row.names(meta)
+
+ps <- phyloseq(otu,met,tax)
+
+# Removing non-fungi samples
+ps <- subset_taxa(ps, Kingdom == "k__Fungi")
+onlyfungi <- rowSums(otu_table(ps))
+
+ps <- subset_taxa(ps, taxa_sums(ps) > 0)
+ps <- subset_samples(ps, sample_sums(ps) > 0)
+nonempty <- rowSums(otu_table(ps))
+ps
+
+# Save DNA sequences apart from rownames (from subsetted ps object)
+seqs <- taxa_names(ps)
+seqs <- DNAStringSet(seqs)
+saveRDS(seqs,"./Outputs/ASV_reference_sequences-th-PNG-ITS.RDS")
+
+pretty_names <- paste("FungalASV",1:length(taxa_names(ps)),":",
+                      tax_table(ps)[,2],
+                      tax_table(ps)[,3],
+                      tax_table(ps)[,4],
+                      tax_table(ps)[,5],
+                      tax_table(ps)[,6],
+                      tax_table(ps)[,7], sep="_") %>%
+  str_remove("k__") %>% str_remove("p__") %>% str_remove("c__") %>% str_remove("o__") %>% str_remove("f__") %>% str_remove("g__") %>% str_remove("s__") %>%
+  str_replace(pattern = "_:_",replacement = ": ")
+
+df <- data.frame(TaxaName=pretty_names,Sequence=taxa_names(ps))
+saveRDS(df,"./Outputs/SequenceNames_and_Taxonomy-th-PNG-ITS.RDS")
+
+# Save RDS object for Phyloseq
+saveRDS(ps, file = "./Outputs/clean_phyloseq_object-th-PNG-ITS.RDS")
+```
+
+## Adding Read Counts for new steps
+```{r}
+nochim <- rowSums(seqtab.nochim)
+lengthfiltered <- rowSums(seqtab.lengthfiltered)
+onlyfungi
+nonempty
+netloss <- (nochim-nonempty)/nochim
+track_decontam <- data.frame(nochim, lengthfiltered, onlyfungi, nonempty, netloss)
+write.csv(track_decontam, file = "./Outputs/read_counts_at_each_step_after_decontam-TH-PNG-ITS.csv", row.names = TRUE)
+track_decontam
+hist(netloss)
+```
