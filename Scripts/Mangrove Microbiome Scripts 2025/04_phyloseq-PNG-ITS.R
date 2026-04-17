@@ -18,9 +18,9 @@ ps.TH <- readRDS("./Outputs/Seagrass_ITS/clean_phyloseq_object-th-PNG-ITS.RDS")
 ps <- merge_phyloseq(ps.AA, ps.SA, ps.EA, ps.TH)
 ps
 
-write.csv(t(as.data.frame(ps@otu_table)), file = "./Outputs/seqtable-ITS.csv", row.names = TRUE)
-write.csv(as.data.frame(ps@tax_table), file = "./Outputs/Silva_Taxonomy-ITS.csv", row.names = TRUE)
-meta.png <- as.data.frame(ps@sam_data)
+write.csv(t(data.frame(otu_table(ps))), file = "./Outputs/seqtable-ITS.csv", row.names = TRUE)
+write.csv(data.frame(tax_table(ps)), file = "./Outputs/Silva_Taxonomy-ITS.csv", row.names = TRUE)
+meta <- data.frame(sample_data(ps))
 write.csv(meta, file = "./Outputs/meta-ITS.csv", row.names = TRUE)
 
 saveRDS(ps, file = "./Outputs/phyloseq-ITS-raw.RDS")
@@ -30,7 +30,7 @@ ps.png <- subset_samples(ps, country == "Papua New Guinea")
 
 saveRDS(ps.png, file = "./Outputs/phyloseq-PNG-ITS-raw.RDS")
 
-ps.png <- readRDS(file = "./Outputs/PNG_ITS/phyloseq-PNG-ITS-raw.RDS")
+ps.png <- readRDS(file = "./Outputs/phyloseq-PNG-ITS-raw.RDS")
 
 # Changing actual sequences to custom ASV IDs while actual sequences stored in refseq()
 dna <- Biostrings::DNAStringSet(taxa_names(ps.png))
@@ -40,7 +40,7 @@ taxa_names(ps.png) <- paste0("ASV", seq(ntaxa(ps.png)))
 ps.png
 
 saveRDS(ps.png, file = "./Outputs/phyloseq-png-ITS-clean.RDS")
-ps <- readRDS(file = "./Outputs/PNG_ITS/phyloseq-png-ITS-clean.RDS")
+ps <- readRDS(file = "./Outputs/phyloseq-png-ITS-clean.RDS")
 
 # Removing less prevalent sequences
 ## Compute prevalence of each feature, store as data.frame
@@ -61,7 +61,7 @@ prevalenceThreshold = 2
 
 ## Execute prevalence filter, using `prune_taxa()` function
 keepTaxa = rownames(prevdf1)[(prevdf1$Prevalence >= prevalenceThreshold)]
-ps1 = prune_taxa(keepTaxa, ps) # 28374 taxas removed
+ps1 = prune_taxa(keepTaxa, ps) # 27539 taxas removed
 
 df.track <- data.frame(Sample = row.names(as.data.frame(ps@sam_data)))
 for (i in 1:nrow(as.data.frame(ps@sam_data))) { 

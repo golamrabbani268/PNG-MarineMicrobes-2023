@@ -1,5 +1,5 @@
 ---
-title: "Mangrove Bacterial Microbiome"
+title: "Coral Bacterial Microbiome"
 author: "Golam Rabbani"
 date: "`r Sys.Date()`"
 output: html_document
@@ -99,47 +99,37 @@ ps.png.bac
 psra.png.bac <- transform_sample_counts(ps.png.bac, function(otu){otu/sum(otu)})
 
 ## Filter by taxa group
-ps.png.bac.mangrove <- subset_samples(ps.png.bac, hostTaxa == "Mangrove")
-ps.png.bac.mangrove.pruned <- prune_taxa(taxa_sums(ps.png.bac.mangrove) > 0, ps.png.bac.mangrove)
-psra.png.bac.mangrove <- transform_sample_counts(ps.png.bac.mangrove, function(otu){otu/sum(otu)})
-ps.png.bac.mangrove
+ps.png.bac.coral <- subset_samples(ps.png.bac, hostTaxa == "Coral")
+ps.png.bac.coral.pruned <- prune_taxa(taxa_sums(ps.png.bac.coral) > 0, ps.png.bac.coral)
+psra.png.bac.coral <- transform_sample_counts(ps.png.bac.coral, function(otu){otu/sum(otu)})
+ps.png.bac.coral
 
 ## Filter by species
-ps.png.bac.aa <- subset_samples(ps.png.bac, host == "Avicinea alba")
-# ps.png.bac.aa <- prune_taxa(taxa_sums(ps.png.bac.aa) > 0, ps.png.bac.aa)
-psra.png.bac.aa <- transform_sample_counts(ps.png.bac.aa, function(otu){otu/sum(otu)})
-ps.png.bac.aa
+ps.png.bac.ps <- subset_samples(ps.png.bac, host == "Pachyseris speciosa")
+# ps.png.bac.ps <- prune_taxa(taxa_sums(ps.png.bac.ps) > 0, ps.png.bac.ps)
+psra.png.bac.ps <- transform_sample_counts(ps.png.bac.ps, function(otu){otu/sum(otu)})
+ps.png.bac.ps
 
-ps.png.bac.sa <- subset_samples(ps.png.bac, host == "Sonneratia alba")
-# ps.png.bac.sa <- prune_taxa(taxa_sums(ps.png.bac.sa) > 0, ps.png.bac.sa)
-psra.png.bac.sa <- transform_sample_counts(ps.png.bac.sa, function(otu){otu/sum(otu)})
-ps.png.bac.sa
+ps.png.bac.pl <- subset_samples(ps.png.bac, host == "Porites lutea")
+# ps.png.bac.pl <- prune_taxa(taxa_sums(ps.png.bac.pl) > 0, ps.png.bac.pl)
+psra.png.bac.pl <- transform_sample_counts(ps.png.bac.pl, function(otu){otu/sum(otu)})
+ps.png.bac.pl
 
-ps.png.bac.mangrove.fruit <- subset_samples(ps.png.bac.mangrove, hostSection == "Fruit")
-psra.png.bac.mangrove.fruit <- transform_sample_counts(ps.png.bac.mangrove.fruit, function(otu){otu/sum(otu)})
-ps.png.bac.mangrove.fruit
+ps.png.bac.dh <- subset_samples(ps.png.bac, host == "Diploastrea heliopora")
+# ps.png.bac.dh <- prune_taxa(taxa_sums(ps.png.bac.dh) > 0, ps.png.bac.dh)
+psra.png.bac.dh <- transform_sample_counts(ps.png.bac.dh, function(otu){otu/sum(otu)})
+ps.png.bac.dh
 
-ps.png.bac.mangrove.leaf <- subset_samples(ps.png.bac.mangrove, hostSection == "Leaf")
-psra.png.bac.mangrove.leaf <- transform_sample_counts(ps.png.bac.mangrove.leaf, function(otu){otu/sum(otu)})
-ps.png.bac.mangrove.leaf
-
-ps.png.bac.mangrove.pneumatophore <- subset_samples(ps.png.bac.mangrove, hostSection == "Pneumatophore")
-psra.png.bac.mangrove.pneumatophore <- transform_sample_counts(ps.png.bac.mangrove.pneumatophore, function(otu){otu/sum(otu)})
-ps.png.bac.mangrove.pneumatophore
-
-ps.png.bac.mangrove.sediment <- subset_samples(ps.png.bac.mangrove, hostSection == "Sediment")
-psra.png.bac.mangrove.sediment <- transform_sample_counts(ps.png.bac.mangrove.sediment, function(otu){otu/sum(otu)})
-ps.png.bac.mangrove.sediment
-
-ps.png.bac.mangrove.nosediment <- subset_samples(ps.png.bac.mangrove, hostSection != "Sediment")
-psra.png.bac.mangrove.nosediment <- transform_sample_counts(ps.png.bac.mangrove.nosediment, function(otu){otu/sum(otu)})
-ps.png.bac.mangrove.nosediment
+ps.png.bac.pa <- subset_samples(ps.png.bac, host == "Pocillopora acuta")
+# ps.png.bac.pa <- prune_taxa(taxa_sums(ps.png.bac.pa) > 0, ps.png.bac.pa)
+psra.png.bac.pa <- transform_sample_counts(ps.png.bac.pa, function(otu){otu/sum(otu)})
+ps.png.bac.pa
 ```
 
 ```{r}
-otu.mangrove <- as.data.frame(ps.png.bac.mangrove@otu_table)
+otu.coral <- as.data.frame(ps.png.bac.coral@otu_table)
 
-meta.mangrove <- as.data.frame(ps.png.bac.mangrove@sam_data)
+meta.coral <- as.data.frame(ps.png.bac.coral@sam_data)
 ```
 
 # Rarefaction Curves
@@ -158,23 +148,23 @@ rarefactionCurve = function(ps, group, color_pal, filename_tag = "TAG"){
 ```
 
 ```{r}
-rarefactionCurve(ps.png.bac.mangrove, "site", COLOR_SITE, filename_tag = "PNG-Mangrove-16s")
-rarefactionCurve(ps.png.bac.mangrove, "host", COLOR_HOST, filename_tag = "PNG-Mangrove-16s")
+rarefactionCurve(ps.png.bac.coral, "site", COLOR_SITE, filename_tag = "PNG-Coral-16s")
+rarefactionCurve(ps.png.bac.coral, "host", COLOR_HOST, filename_tag = "PNG-Coral-16s")
 ```
 
 # Preston model for estimated diversity coverage
 
 ```{r}
-preston.mod.oct <- prestonfit(colSums(otu.mangrove))
-preston.mod.ll <- prestondistr(colSums(otu.mangrove))
+preston.mod.oct <- prestonfit(colSums(otu.coral))
+preston.mod.ll <- prestondistr(colSums(otu.coral))
 preston.mod.oct
 preston.mod.ll
 
 plot(preston.mod.oct)  
 lines(preston.mod.ll, line.col = "blue3") # Different
 ## Smoothed density
-den <- density(log2(colSums(otu.mangrove)))
-lines(den$x, ncol(otu.mangrove)*den$y, lwd=2) # Fairly similar to mod.oct
+den <- density(log2(colSums(otu.coral)))
+lines(den$x, ncol(otu.coral)*den$y, lwd=2) # Fairly similar to mod.oct
 
 ## Extrapolated richness
 veiledspec(preston.mod.oct)
@@ -185,15 +175,15 @@ veiledspec(preston.mod.ll)[2] / veiledspec(preston.mod.ll)[1]
 
 # Accumulation curve of richness
 ```{r}
-venn_mangrove_hostSection <- ps_venn(ps.png.bac.mangrove, "hostSection")#, fill = alpha(COLOR_HOST_SECTION, 0.5))
-venn_mangrove_hostSection
+venn_coral_host <- ps_venn(ps.png.bac.coral, "host")#, fill = alpha(COLOR_HOST, 0.5))
+venn_coral_host
 ```
 
 ```{r}
-accum_curve_exact = specaccum(otu.mangrove, method = "exact")
+accum_curve_exact = specaccum(otu.coral, method = "exact")
 
-table(meta.mangrove$site[order(meta.mangrove$site)])
-accum_curve_site = specaccum(otu.mangrove[order(meta.mangrove$site),], method = "collector")
+table(meta.coral$site[order(meta.coral$site)])
+accum_curve_site = specaccum(otu.coral[order(meta.coral$site),], method = "collector")
 ggplot() + 
   annotate("rect", xmin = 0, xmax = 40.5, ymin = -Inf, ymax = Inf,
            alpha = 0.5, fill = COLOR_SITE["Kavieng"]) +
@@ -209,67 +199,24 @@ ggplot() +
   lims(x = c(0,400))
   
 
-unique(meta.mangrove$host[order(meta.mangrove$host)])
-accum_curve_host = specaccum(otu.mangrove[order(meta.mangrove$host),], method = "collector")
+unique(meta.coral$host[order(meta.coral$host)])
+accum_curve_host = specaccum(otu.coral[order(meta.coral$host),], method = "collector")
 
-
-table(meta.mangrove$hostSection[order(meta.mangrove$hostSection)])
-accum_curve_hostSection <- specaccum(otu.mangrove[order(meta.mangrove$hostSection),], method = "collector")
 ggplot() + 
   annotate("rect", xmin = 0, xmax = 100.5, ymin = -Inf, ymax = Inf,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Fruit"]) +
+           alpha = 0.5, fill = COLOR_HOST["Pachyseris speciosa"]) +
   annotate("rect", xmin = 100.5, xmax = 200.5, ymin = -Inf, ymax = Inf,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Leaf"]) +
+           alpha = 0.5, fill = COLOR_HOST["Porites lutea"]) +
   annotate("rect", xmin = 200.5, xmax = 300.5, ymin = -Inf, ymax = Inf,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Pneumatophore"]) +
+           alpha = 0.5, fill = COLOR_HOST["Diploastrea heliopora"]) +
   annotate("rect", xmin = 300.5, xmax = 400, ymin = -Inf, ymax = Inf,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Sediment"]) +
-  geom_line(aes(x = accum_curve_hostSection$sites, y = accum_curve_hostSection$richness)) +
+           alpha = 0.5, fill = COLOR_HOST["Pocillopora acuta"]) +
+  geom_line(aes(x = accum_curve_host$sites, y = accum_curve_host$richness)) +
   lims(x = c(0,400))
 
-
-accum_curve_hostSection_exact_fruit <- specaccum(otu.mangrove, subset = meta.mangrove$hostSection == "Fruit", method = "exact")
-accum_curve_hostSection_exact_leaf <- specaccum(otu.mangrove, subset = meta.mangrove$hostSection == "Leaf", method = "exact")
-accum_curve_hostSection_exact_pneumatophore <- specaccum(otu.mangrove, subset = meta.mangrove$hostSection == "Pneumatophore", method = "exact")
-accum_curve_hostSection_exact_sediment <- specaccum(otu.mangrove, subset = meta.mangrove$hostSection == "Sediment", method = "exact")
-
-df <- data.frame(sites = 
-                   c(accum_curve_hostSection_exact_sediment$sites,
-                     accum_curve_hostSection_exact_pneumatophore$sites + 
-                       max(),
-                     accum_curve_hostSection_exact_leaf$sites + 
-                       max(),
-                     accum_curve_hostSection_exact_fruit$sites + 
-                       max()
-                     ),
-                 richness = 
-                   c(accum_curve_hostSection_exact_sediment$richness,
-                     accum_curve_hostSection_exact_pneumatophore$richness + 
-                       max(),
-                     accum_curve_hostSection_exact_leaf$richness + 
-                       max(),
-                     accum_curve_hostSection_exact_fruit$richness + 
-                       max()
-                     )
-                 )
-ggplot() + 
-  annotate("rect", xmin = 0, xmax = 100.5, ymin = -Inf, ymax = Inf,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Fruit"]) +
-  annotate("rect", xmin = 100.5, xmax = 200.5, ymin = -Inf, ymax = Inf,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Leaf"]) +
-  annotate("rect", xmin = 200.5, xmax = 300.5, ymin = -Inf, ymax = Inf,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Pneumatophore"]) +
-  annotate("rect", xmin = 300.5, xmax = 400, ymin = -Inf, ymax = Inf,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Sediment"]) +
-  geom_line(aes(x = df$sites, y = df$richness)) +
-  lims(x = c(0,400))
 
 unique(as.data.frame(ps.png.bac@sam_data)$hostTaxa[order(as.data.frame(ps.png.bac@sam_data)$hostTaxa)])
 accum_curve_hostTaxa = specaccum(as.data.frame(ps.png.bac@otu_table)[order(as.data.frame(ps.png.bac@sam_data)$site),], method = "collector")
-```
-
-```{r}
-
 ```
 
 # Top 20 ASVs Filtering
@@ -314,12 +261,14 @@ createTop20ASVPhyloseq <- function(ps){
 ## All
 ps.png.bac.top20 <- createTop20ASVPhyloseq(ps.png.bac)
 
-## Mangrove
-ps.png.bac.mangrove.top20 <- createTop20ASVPhyloseq(ps.png.bac.mangrove)
+## Coral
+ps.png.bac.coral.top20 <- createTop20ASVPhyloseq(ps.png.bac.coral)
 
 ## By Species
-ps.png.bac.aa.top20 <- createTop20ASVPhyloseq(ps.png.bac.aa)
-ps.png.bac.sa.top20 <- createTop20ASVPhyloseq(ps.png.bac.sa)
+ps.png.bac.ps.top20 <- createTop20ASVPhyloseq(ps.png.bac.ps)
+ps.png.bac.pl.top20 <- createTop20ASVPhyloseq(ps.png.bac.pl)
+ps.png.bac.dh.top20 <- createTop20ASVPhyloseq(ps.png.bac.dh)
+ps.png.bac.pa.top20 <- createTop20ASVPhyloseq(ps.png.bac.pa)
 
 ## Mapping for colors
 taxa_top_20_all <- as.data.frame(ps.png.bac.top20@tax_table)
@@ -640,13 +589,13 @@ ra_barplot_bac_sa_sample_species
 # Diversity
 ```{r}
 diversity <- data.frame(
-                  site = psra.png.bac.mangrove@sam_data$site,
-                  host = psra.png.bac.mangrove@sam_data$host,
-                  hostTaxa = psra.png.bac.mangrove@sam_data$hostTaxa,
-                  hostSection = psra.png.bac.mangrove@sam_data$hostSection,
-                  shannon = vegan::diversity(otu_table(psra.png.bac.mangrove, taxa_are_rows = FALSE)),
-                  richness = t(colSums(decostand(otu_table(psra.png.bac.mangrove, taxa_are_rows = FALSE), method = "pa"))))
-write.csv(diversity, file = "./Outputs/diversity-mangrove-PNG-16s.csv", quote = FALSE)
+                  site = psra.png.bac.coral@sam_data$site,
+                  host = psra.png.bac.coral@sam_data$host,
+                  hostTaxa = psra.png.bac.coral@sam_data$hostTaxa,
+                  hostSection = psra.png.bac.coral@sam_data$hostSection,
+                  shannon = vegan::diversity(otu_table(psra.png.bac.coral, taxa_are_rows = FALSE)),
+                  richness = richness(otu_table(psra.png.bac.coral, taxa_are_rows = FALSE)))
+write.csv(diversity, file = "./Outputs/diversity-coral-PNG-16s.csv", quote = FALSE)
 diversity
 
 ## By site
@@ -660,86 +609,9 @@ diversity %>% group_by(host) %>%
 ## By hostTaxa
 diversity %>% group_by(hostTaxa) %>%
   summarise(N = n(), Min = min(shannon), Max = max(shannon), Mean = mean(shannon), Median = median(shannon), SD = sd(shannon), )
-
-## By hostSection
-diversity %>% group_by(hostSection) %>%
-  summarise(N = n(), Min = min(shannon), Max = max(shannon), Mean = mean(shannon), Median = median(shannon), SD = sd(shannon), )
 ```
 
 ```{r}
-## Boxplots
-ggplot(diversity, aes(x = site, y = shannon, fill = host)) + 
-  geom_boxplot() + 
-  theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
-  labs(
-    x = "Site",
-    y = "Shannon Diversity",
-    fill = "Host"
-    ) +
-  scale_fill_manual(values = COLOR_HOST)
-ggsave(filename = "./Outputs/shannonDiversity-filled-site-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
-
-ggplot(diversity, aes(x=site, y=shannon, fill = host)) + 
-  geom_violin(draw_quantiles = c(0.25, 0.50, 0.75)) + 
-  theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
-  labs(
-    x = "Site",
-    y = "Shannon Diversity",
-    fill = "Host"
-  ) +
-  scale_fill_manual(values = COLOR_HOST)
-
-ggplot(diversity, aes(x = host, y = shannon, fill = site)) + 
-  geom_boxplot() + theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
-  labs(
-    x = "Host",
-    y = "Shannon Diversity",
-    fill = "Site"
-  ) +
-  scale_fill_manual(values = COLOR_SITE)
-ggsave(filename = "./Outputs/shannonDiversity-filled-host-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
-
-ggplot(diversity, aes(x = host, y = shannon, fill = hostTaxa)) + 
-  geom_boxplot() + theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
-  labs(
-    x = "Host",
-    y = "Shannon Diversity",
-    fill = "Host Taxa"
-  ) +
-  scale_fill_manual(values = COLOR_HOST_TAXA)
-ggsave(filename = "./Outputs/shannonDiversity-filled-hostTaxa-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
-
-ggplot(diversity, aes(x = host, y = shannon, fill = hostSection)) + 
-  geom_boxplot() + theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
-  labs(
-    x = "Host",
-    y = "Shannon Diversity",
-    fill = "Host Section"
-  ) +
-  scale_fill_manual(values = COLOR_HOST_SECTION)
-ggsave(filename = "./Outputs/shannonDiversity-filled-host-hostSection-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
-
-ggplot(diversity, aes(x = site, y = shannon, fill = hostSection)) + 
-  geom_boxplot() + theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
-  labs(
-    x = "Site",
-    y = "Shannon Diversity",
-    fill = "Host Section"
-  ) +
-  scale_fill_manual(values = COLOR_HOST_SECTION) +
-  facet_wrap(vars(host))
-ggsave(filename = "./Outputs/shannonDiversity-filled-site-hostSection-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
-```
-
-```{r}
-# New Boxplots
-
 ## For Site
 ggplot(diversity, aes(x = site, y = shannon)) + 
   geom_jitter(aes(color = site), alpha = 0.5, height = 0, size = 5) +
@@ -752,7 +624,7 @@ ggplot(diversity, aes(x = site, y = shannon)) +
     color = "Site"
     ) +
   scale_color_manual(values = COLOR_SITE)
-ggsave(filename = "./Outputs/shannonDiversity-site-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
+ggsave(filename = "./Outputs/shannonDiversity-site-coral-PNG-16s.svg", dpi = 300, width = 12, height = 10)
 
 ### with host as color
 ggplot(diversity, aes(x = site, y = shannon)) + 
@@ -766,7 +638,7 @@ ggplot(diversity, aes(x = site, y = shannon)) +
     color = "Host"
     ) +
   scale_color_manual(values = COLOR_HOST)
-ggsave(filename = "./Outputs/shannonDiversity-site-host-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
+ggsave(filename = "./Outputs/shannonDiversity-site-host-coral-PNG-16s.svg", dpi = 300, width = 12, height = 10)
 
 ## For Host
 ggplot(diversity, aes(x = host, y = shannon)) + 
@@ -780,7 +652,7 @@ ggplot(diversity, aes(x = host, y = shannon)) +
     color = "Host"
     ) +
   scale_color_manual(values = COLOR_HOST)
-ggsave(filename = "./Outputs/shannonDiversity-host-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
+ggsave(filename = "./Outputs/shannonDiversity-host-coral-PNG-16s.svg", dpi = 300, width = 12, height = 10)
 
 ## For HostSection for separate species
 ggplot(diversity, aes(x = hostSection, y = shannon)) + 
@@ -796,7 +668,22 @@ ggplot(diversity, aes(x = hostSection, y = shannon)) +
     ) +
   scale_color_manual(values = COLOR_SITE) +
   facet_wrap(vars(host))
-ggsave(filename = "./Outputs/shannonDiversity-hostSection-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
+ggsave(filename = "./Outputs/shannonDiversity-hostSection-coral-PNG-16s.svg", dpi = 300, width = 12, height = 10)
+
+ggplot(diversity, aes(x = hostSection, y = richness.observed)) + 
+  geom_jitter(aes(color = site, shape = hostSection), alpha = 0.5, height = 0, size = 5) +
+  geom_boxplot(alpha = 0) + 
+  theme_bw() + 
+  theme(axis.text.x = element_blank(), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
+  labs(
+    x = "Host",
+    y = "Observed Richness",
+    color = "Site",
+    shape = "Host Section"
+    ) +
+  scale_color_manual(values = COLOR_SITE) +
+  facet_wrap(vars(host))
+ggsave(filename = "./Outputs/richnessObserved-hostSection-coral-PNG-16s.svg", dpi = 300, width = 12, height = 10)
 
 ## For site for separate hostsection and species
 ggplot(diversity, aes(x = site, y = shannon)) + 
@@ -812,7 +699,7 @@ ggplot(diversity, aes(x = site, y = shannon)) +
     ) +
   scale_color_manual(values = COLOR_SITE) +
   facet_wrap(vars(hostSection))
-ggsave(filename = "./Outputs/shannonDiversity-site-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
+ggsave(filename = "./Outputs/shannonDiversity-site-coral-PNG-16s.svg", dpi = 300, width = 12, height = 10)
 
 ggplot(diversity, aes(x = site, color = host, y = shannon)) + 
   geom_boxplot(aes(fill = host), alpha = 10) + 
@@ -828,7 +715,7 @@ ggplot(diversity, aes(x = site, color = host, y = shannon)) +
   scale_color_manual(values = COLOR_SITE) +
   scale_fill_manual(values = COLOR_HOST) +
   facet_wrap(vars(hostSection))
-ggsave(filename = "./Outputs/shannonDiversity-site_sepHost-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
+ggsave(filename = "./Outputs/shannonDiversity-site_sepHost-coral-PNG-16s.svg", dpi = 300, width = 12, height = 10)
 
 
 ```
@@ -837,27 +724,27 @@ ggsave(filename = "./Outputs/shannonDiversity-site_sepHost-mangrove-PNG-16s.svg"
 ## Statistical tests for Shannon diversity
 #diversity$host_site_hostSection <- paste0(diversity$host, "_", diversity$site, "_", diversity$hostSection)
 #shannon_pairwise_comparions <- pairwise.wilcox.test(diversity$shannon, diversity$host_site_hostSection, p.adjust.method = "bonferroni")
-#write.csv(as.data.frame(shannon_pairwise_comparions$p.value), "./Outputs/shannonDiversityWilcoxonPairwiseTests-mangrove-PNG-16s.csv")
+#write.csv(as.data.frame(shannon_pairwise_comparions$p.value), "./Outputs/shannonDiversityWilcoxonPairwiseTests-coral-PNG-16s.csv")
 #shannon_pairwise_comparions
 
 diversity$host_hostSection <- paste0(diversity$host, "_", diversity$hostSection)
 shannon_pairwise_comparions <- pairwise.wilcox.test(diversity$shannon, diversity$host_hostSection, p.adjust.method = "bonferroni")
-write.csv(as.data.frame(shannon_pairwise_comparions$p.value), "./Outputs/shannonDiversityWilcoxonPairwiseTests-mangrove-PNG-16s.csv")
+write.csv(as.data.frame(shannon_pairwise_comparions$p.value), "./Outputs/shannonDiversityWilcoxonPairwiseTests-coral-PNG-16s.csv")
 shannon_pairwise_comparions
 
 diversity$hostSection_site <- paste0(diversity$hostSection, "_", diversity$site)
 shannon_pairwise_comparions <- pairwise.wilcox.test(diversity$shannon, diversity$hostSection_site, p.adjust.method = "bonferroni")
-write.csv(as.data.frame(shannon_pairwise_comparions$p.value), "./Outputs/shannonDiversityWilcoxonPairwiseTests-hostSection_site-mangrove-PNG-16s.csv")
+write.csv(as.data.frame(shannon_pairwise_comparions$p.value), "./Outputs/shannonDiversityWilcoxonPairwiseTests-hostSection_site-coral-PNG-16s.csv")
 shannon_pairwise_comparions
 
 diversity$hostSection_site_host <- paste0(diversity$hostSection, "_", diversity$site, "_", diversity$host)
 shannon_pairwise_comparions <- pairwise.wilcox.test(diversity$shannon, diversity$hostSection_site_host, p.adjust.method = "bonferroni")
-write.csv(as.data.frame(shannon_pairwise_comparions$p.value), "./Outputs/shannonDiversityWilcoxonPairwiseTests-hostSection_site_host-mangrove-PNG-16s.csv")
+write.csv(as.data.frame(shannon_pairwise_comparions$p.value), "./Outputs/shannonDiversityWilcoxonPairwiseTests-hostSection_site_host-coral-PNG-16s.csv")
 
 ```
 
 # Heatmap
-## Mangrove
+## Coral
 
 ```{r}
 library(microViz)
@@ -938,7 +825,7 @@ generateHeatmapTaxaSpecific <- function(psq, heatmap_rank = NA, sample_arrange =
     )
 }
 
-renameTaxafromASV <- function(ASVID, psq = ps.png.bac.mangrove){
+renameTaxafromASV <- function(ASVID, psq = ps.png.bac){
   psq <- psq %>% tax_fix()
   renamedTaxa <- NULL
   for (i in ASVID){
@@ -957,11 +844,11 @@ renameTaxafromASV <- function(ASVID, psq = ps.png.bac.mangrove){
 ```
 
 ```{r}
-svglite("./Outputs/relativeAbundanceHeatmap-mangrove-phylum-PNG-16S.svg")
-generateHeatmap(ps.png.bac.mangrove, heatmap_rank = "Phylum", sample_arrange = c("hostSection", "host", "site"))
+svglite("./Outputs/relativeAbundanceHeatmap-coral-phylum-PNG-16S.svg")
+generateHeatmap(ps.png.bac.coral, heatmap_rank = "Phylum", sample_arrange = c("hostSection", "host", "site"))
 dev.off()
-svglite("./Outputs/relativeAbundanceHeatmap-mangrove-class-PNG-16S.svg")
-generateHeatmap(ps.png.bac.mangrove, heatmap_rank = "Class", sample_arrange = c("hostSection", "host", "site"))
+svglite("./Outputs/relativeAbundanceHeatmap-coral-class-PNG-16S.svg")
+generateHeatmap(ps.png.bac.coral, heatmap_rank = "Class", sample_arrange = c("hostSection", "host", "site"))
 dev.off()
 ```
 
@@ -1004,285 +891,6 @@ htmap <-
 htmap %>% ComplexHeatmap::draw(
   annotation_legend_list = attr(htmap, "AnnoLegends")
 )
-```
-
-
-## Previous Method
-
-```{r}
-melted_ps.bac.mangrove <- psmelt(psra.png.bac.mangrove)
-```
-
-### By Phylum
-```{r}
-factor_melted_ps.bac.mangrove_by_siteHostSpecies <- unique(melted_ps.bac.mangrove[,c("site", "host", "hostSection")])
-dataframe <- data.frame()  #creating dataframe to fill in information
-melted_ps.bac.mangrove_aggregate <- aggregate(
-  Abundance ~ OTU * site * host * hostSection,
-  data = melted_ps.bac.mangrove,
-  mean
-)
-tax.bac.mangrove_table <- as.data.frame(ps.png.bac.mangrove@tax_table)
-tax.bac.mangrove_table$OTU <- row.names(tax.bac.mangrove_table)
-melted_ps.bac.mangrove_aggregate <- left_join(melted_ps.bac.mangrove_aggregate,
-                                     tax.bac.mangrove_table,
-                                     by = "OTU")
-
-for (i in 1:nrow(factor_melted_ps.bac.mangrove_by_siteHostSpecies)) {                                    #For each combination,
-  sub_ps.bac.mangrove <- melted_ps.bac.mangrove_aggregate[melted_ps.bac.mangrove_aggregate$site == factor_melted_ps.bac.mangrove_by_siteHostSpecies[i,1] &
-                                                          melted_ps.bac.mangrove_aggregate$host == factor_melted_ps.bac.mangrove_by_siteHostSpecies[i,2] &
-                                                          melted_ps.bac.mangrove_aggregate$hostSection == factor_melted_ps.bac.mangrove_by_siteHostSpecies[i,3],] #subset dataframe.
-  
-  per_rank_abundance <- aggregate(Abundance ~ Phylum, data = sub_ps.bac.mangrove, sum)  #Aggregate abundance based on each rank
-  
-  per_rank_abundance$site <- sub_ps.bac.mangrove$site[1:nrow(per_rank_abundance)] #Adding sample name to each rank row
-  per_rank_abundance$host <- sub_ps.bac.mangrove$host[1:nrow(per_rank_abundance)] 
-  per_rank_abundance$hostSection <- sub_ps.bac.mangrove$hostSection[1:nrow(per_rank_abundance)]
-  
-  dataframe <- rbind(dataframe, per_rank_abundance)                       #store this in a dataframe for each row
-}
-
-#Sorting dataframe in order of hostTaxa, site, host, hostSection
-ordered_df.mangrove <- dataframe[order(dataframe$site, dataframe$host, dataframe$hostSection),]
-ordered_df.mangrove <- ordered_df.mangrove %>% 
-  mutate(
-    siteTag = case_when(
-      site=="Kavieng" ~ "Kav", 
-      site=="Kimbe Bay" ~ "Kim", 
-      site=="Madang" ~ "Mad", 
-      site=="Milne Bay" ~ "Mil", 
-      site=="Port Moresby" ~ "Mot", 
-      site=="Rabaul" ~ "Rab"
-    ),
-    hostTag = case_when(
-      host=="Avicinea alba" ~ "Aa", 
-      host=="Sonneratia alba" ~ "Sa"
-    ),
-    hostSectionTag = case_when(
-      hostSection=="Fruit" ~ "Fru", 
-      hostSection=="Leaf" ~ "Lea", 
-      hostSection=="Pneumatophore" ~ "Pne", 
-      hostSection=="Sediment" ~ "Sed"
-    )
-  )
-ordered_df.mangrove$sortUID <- paste0(ordered_df.mangrove$hostSectionTag, ordered_df.mangrove$hostTag, ordered_df.mangrove$siteTag)
-```
-
-```{r}
-table(ordered_df.mangrove$host) / length(unique(ordered_df.mangrove$Phylum))
-heatplot <- ggplot(ordered_df.mangrove, aes(reorder(sortUID, sortUID), reorder(Phylum, Phylum))) +
-  geom_tile(aes(fill = Abundance)) + 
-  labs(y = "Phylum", x = "") + 
-  scale_x_discrete(expand = c(0,0)) + 
-  scale_y_discrete(expand = c(0,0)) +
-  theme(axis.title = element_text(size = 20), axis.text.y = element_text(size = 13), 
-        axis.text.x = element_blank(),#element_text(angle = 90), 
-        axis.ticks.x = element_blank(),
-        legend.text = element_text(size = 13), legend.title = element_text(size = 15),
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + 
-  scale_fill_gradient2(
-        #colors = c("white", "#132B43"),
-        low = "white",
-        mid = "#a6bddb",
-        high = "#2b8cbe",#"#c62828","#132B43""#56B1F7""#1565c0""#ece7f2"
-        midpoint = mean(ordered_df$Abundance),
-        transform = "log",
-        na.value = "white",
-        breaks = 10^(-2*(5:0)),
-        limits = c(sort(unique(ordered_df$Abundance))[2],1)
-        )
-  
-y.min <- -0.5
-y.max <- 0.5
-y.mid <- y.min + (y.max - y.min) / 2
-heatplot <- heatplot +
-  
-  # Host Taxa 1: Mangrove
-  annotate("rect", xmin = 0.5, xmax = 9.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Fruit"]) +
-  annotate("rect", xmin = 9.5, xmax = 18.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Leaf"]) +
-  annotate("rect", xmin = 18.5, xmax = 27.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Pneumatophore"]) +
-  annotate("rect", xmin = 27.5, xmax = 36.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Sediment"]) + 
-  annotate("text", x = 0.5 + (9.5 - 0.5) / 2, y = y.mid, label = names(COLOR_HOST_SECTION["Fruit"]), size = 3, srt = 0) +
-  annotate("text", x = 9.5 + (18.5 - 9.5) / 2, y = y.mid, label = names(COLOR_HOST_SECTION["Leaf"]), size = 3, srt = 0) +
-  annotate("text", x = 18.5 + (27.5 - 18.5) / 2, y = y.mid, label = names(COLOR_HOST_SECTION["Pneumatophore"]), size = 3, srt = 0) +
-  annotate("text", x = 27.5 + (36.5 - 27.5) / 2, y = y.mid, label = names(COLOR_HOST_SECTION["Sediment"]), size = 3, srt = 0) +
-  
-  # For host section
-  geom_vline(xintercept = c(9.5, 18.5, 27.5, 36.5, 48.5, 60.5, 72.5, 84.5), alpha = 0.2) +
-  
-  # Host Taxa
-  annotate("rect", xmin = 0.5, xmax = 36.5, ymin = y.min - 1.5, ymax = y.min,
-           alpha = 1, fill = COLOR_HOST_TAXA[1]) +
-  annotate("text", x = 0.5 + (36.5 - 0.5) / 2, y = y.min - 1.5 / 2, label = names(COLOR_HOST_TAXA[1]), size = 5, srt = 0)
-
-heatplot
-ggsave(heatplot, filename = "./Outputs/relativeAbundanceHeatmap-mangrove-phylum-PNG-16s.svg", dpi = 300, width = 18, height = 15)
-
-heatplot_linear <- heatplot + 
-  scale_fill_gradient2(
-        #colors = c("white", "#132B43"),
-        low = "white",
-        mid = "#a6bddb",
-        high = "#2b8cbe",
-        midpoint = 0.5,
-        na.value = "white",
-        limits = c(0,1)
-        )
-ggsave(heatplot_linear, filename = "./Outputs/relativeAbundanceHeatmapLinear-mangrove-phylum-PNG-16s.svg", dpi = 300, width = 18, height = 15)
-```
-
-### By Phylum - Individual samples
-```{r}
-factor_melted_ps.bac.mangrove_by_sample <- unique(melted_ps.bac.mangrove[,c("site", "host", "hostSection", "Sample")])
-dataframe <- data.frame()  #creating dataframe to fill in information
-tax.bac.mangrove_table <- as.data.frame(ps.png.bac.mangrove@tax_table)
-tax.bac.mangrove_table$OTU <- row.names(tax.bac.mangrove_table)
-melted_ps.bac.mangrove_by_sample <- melted_ps.bac.mangrove
-
-for (i in 1:nrow(factor_melted_ps.bac.mangrove_by_sample)) {                                    #For each sample,
-  sub_ps.bac.mangrove <- melted_ps.bac.mangrove_by_sample[melted_ps.bac.mangrove_by_sample$site == factor_melted_ps.bac.mangrove_by_sample[i,1] &
-                                                          melted_ps.bac.mangrove_by_sample$host == factor_melted_ps.bac.mangrove_by_sample[i,2] &
-                                                          melted_ps.bac.mangrove_by_sample$hostSection == factor_melted_ps.bac.mangrove_by_sample[i,3] &
-                                                          melted_ps.bac.mangrove_by_sample$Sample == factor_melted_ps.bac.mangrove_by_sample[i,4],] #subset dataframe.
-  
-  per_rank_abundance <- aggregate(Abundance ~ Phylum, data = sub_ps.bac.mangrove, sum)  #Aggregate abundance based on each rank
-  
-  per_rank_abundance$site <- sub_ps.bac.mangrove$site[1:nrow(per_rank_abundance)] #Adding sample name to each rank row
-  per_rank_abundance$host <- sub_ps.bac.mangrove$host[1:nrow(per_rank_abundance)] 
-  per_rank_abundance$hostSection <- sub_ps.bac.mangrove$hostSection[1:nrow(per_rank_abundance)]
-  per_rank_abundance$Sample <- sub_ps.bac.mangrove$Sample[1:nrow(per_rank_abundance)]
-  
-  dataframe <- rbind(dataframe, per_rank_abundance)                       #store this in a dataframe for each row
-}
-
-#Sorting dataframe in order of hostTaxa, site, host, hostSection
-ordered_df.mangrove_by_sample <- dataframe[order(dataframe$site, dataframe$host, dataframe$hostSection),]
-ordered_df.mangrove_by_sample <- ordered_df.mangrove_by_sample %>% 
-  mutate(
-    siteTag = case_when(
-      site=="Kavieng" ~ "Kav", 
-      site=="Kimbe Bay" ~ "Kim", 
-      site=="Madang" ~ "Mad", 
-      site=="Milne Bay" ~ "Mil", 
-      site=="Port Moresby" ~ "Mot", 
-      site=="Rabaul" ~ "Rab"
-    ),
-    hostTag = case_when(
-      host=="Avicinea alba" ~ "Aa", 
-      host=="Sonneratia alba" ~ "Sa"
-    ),
-    hostSectionTag = case_when(
-      hostSection=="Fruit" ~ "Fru", 
-      hostSection=="Leaf" ~ "Lea", 
-      hostSection=="Pneumatophore" ~ "Pne", 
-      hostSection=="Sediment" ~ "Sed"
-    ),
-    SampleTag = Sample
-  )
-ordered_df.mangrove_by_sample$sortUID <- paste0(ordered_df.mangrove_by_sample$hostSectionTag, ordered_df.mangrove_by_sample$hostTag, ordered_df.mangrove_by_sample$siteTag, ordered_df.mangrove_by_sample$Sample)
-```
-
-```{r}
-table(ordered_df.mangrove_by_sample$host) / length(unique(ordered_df.mangrove$Phylum))
-table(ordered_df.mangrove_by_sample$hostSection) / length(unique(ordered_df.mangrove$Phylum))
-table(ordered_df.mangrove_by_sample$host, ordered_df.mangrove_by_sample$hostSection) / length(unique(ordered_df.mangrove$Phylum))
-heatplot <- ggplot(ordered_df.mangrove_by_sample, aes(reorder(sortUID, sortUID), reorder(Phylum, Phylum))) +
-  geom_tile(aes(fill = Abundance)) + 
-  labs(y = "Phylum", x = "") + 
-  scale_x_discrete(expand = c(0,0)) + 
-  scale_y_discrete(expand = c(0,0)) +
-  theme(axis.title = element_text(size = 20), axis.text.y = element_text(size = 13), 
-        axis.text.x = element_blank(),#element_text(angle = 90), 
-        axis.ticks.x = element_blank(),
-        legend.text = element_text(size = 13), legend.title = element_text(size = 15),
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + 
-  scale_fill_gradient2(
-        #colors = c("white", "#132B43"),
-        low = "white",
-        mid = "#a6bddb",
-        high = "#2b8cbe",#"#c62828","#132B43""#56B1F7""#1565c0""#ece7f2"
-        midpoint = mean(ordered_df$Abundance),
-        transform = "log",
-        na.value = "white",
-        breaks = 10^(-2*(5:0)),
-        limits = c(sort(unique(ordered_df$Abundance))[2],1)
-        )
-  
-y.min <- -0.5
-y.max <- 0.5
-y.mid <- y.min + (y.max - y.min) / 2
-heatplot <- heatplot +
-  
-  # Host Species
-  annotate("rect", xmin = 0.5, xmax = 40.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Avicinea alba"]) + 
-  annotate("rect", xmin = 40.5, xmax = 100.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Sonneratia alba"]) + 
-  annotate("rect", xmin = 100.5, xmax = 140.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Avicinea alba"]) + 
-  annotate("rect", xmin = 140.5, xmax = 200.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Sonneratia alba"]) + 
-  annotate("rect", xmin = 200.5, xmax = 240.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Avicinea alba"]) + 
-  annotate("rect", xmin = 240.5, xmax = 300.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Sonneratia alba"]) + 
-  annotate("rect", xmin = 300.5, xmax = 340.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Avicinea alba"]) + 
-  annotate("rect", xmin = 340.5, xmax = 400.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Sonneratia alba"]) + 
-  annotate("text", x = 0.5 + (40.5 - 0.5) / 2, y = y.mid, label = names(COLOR_HOST["Avicinea alba"]), size = 3, srt = 0) +
-  annotate("text", x = 40.5 + (100.5 - 40.5) / 2, y = y.mid, label = names(COLOR_HOST["Sonneratia alba"]), size = 3, srt = 0) +
-  annotate("text", x = 100.5 + (140.5 - 100.5) / 2, y = y.mid, label = names(COLOR_HOST["Avicinea alba"]), size = 3, srt = 0) +
-  annotate("text", x = 140.5 + (200.5 - 140.5) / 2, y = y.mid, label = names(COLOR_HOST["Sonneratia alba"]), size = 3, srt = 0) +
-  annotate("text", x = 200.5 + (240.5 - 200.5) / 2, y = y.mid, label = names(COLOR_HOST["Avicinea alba"]), size = 3, srt = 0) +
-  annotate("text", x = 240.5 + (300.5 - 240.5) / 2, y = y.mid, label = names(COLOR_HOST["Sonneratia alba"]), size = 3, srt = 0) +
-  annotate("text", x = 300.5 + (340.5 - 300.5) / 2, y = y.mid, label = names(COLOR_HOST["Avicinea alba"]), size = 3, srt = 0) +
-  annotate("text", x = 340.5 + (400.5 - 340.5) / 2, y = y.mid, label = names(COLOR_HOST["Sonneratia alba"]), size = 3, srt = 0) +
-  
-  # For host species
-  geom_vline(xintercept = c(40.5, 100.5, 140.5, 200.5, 240.5, 300.5, 340.5), alpha = 0.2) +
-  
-  # Host Section
-  annotate("rect", xmin = 0.5, xmax = 100.5, ymin = y.min - 1.5, ymax = y.min,
-           alpha = 1, fill = COLOR_HOST_SECTION["Fruit"]) +
-  annotate("rect", xmin = 100.5, xmax = 200.5, ymin = y.min - 1.5, ymax = y.min,
-           alpha = 1, fill = COLOR_HOST_SECTION["Leaf"]) +
-  annotate("rect", xmin = 200.5, xmax = 300.5, ymin = y.min - 1.5, ymax = y.min,
-           alpha = 1, fill = COLOR_HOST_SECTION["Pneumatophore"]) +
-  annotate("rect", xmin = 300.5, xmax = 400.5, ymin = y.min - 1.5, ymax = y.min,
-           alpha = 1, fill = COLOR_HOST_SECTION["Sediment"]) + 
-  annotate("text", x = 0.5 + (100.5 - 0.5) / 2, y = y.min - 1.5 / 2, label = names(COLOR_HOST_SECTION["Fruit"]), size = 3, srt = 0) +
-  annotate("text", x = 100.5 + (200.5 - 100.5) / 2, y = y.min - 1.5 / 2, label = names(COLOR_HOST_SECTION["Leaf"]), size = 3, srt = 0) +
-  annotate("text", x = 200.5 + (300.5 - 200.5) / 2, y = y.min - 1.5 / 2, label = names(COLOR_HOST_SECTION["Pneumatophore"]), size = 3, srt = 0) +
-  annotate("text", x = 300.5 + (400.5 - 300.5) / 2, y = y.min - 1.5 / 2, label = names(COLOR_HOST_SECTION["Sediment"]), size = 3, srt = 0) +
-  
-  # For host section
-  geom_vline(xintercept = c(100.5, 200.5, 300.5), alpha = 0.5) +
-  
-  # Host Taxa
-  annotate("rect", xmin = 0.5, xmax = 400.5, ymin = y.min - 2.5, ymax = y.min - 1,
-           alpha = 1, fill = COLOR_HOST_TAXA[1]) +
-  annotate("text", x = 0.5 + (400.5 - 0.5) / 2, y = y.min - 2.5 + (1.5) / 2, label = names(COLOR_HOST_TAXA[1]), size = 5, srt = 0)
-  
-
-heatplot
-ggsave(heatplot, filename = "./Outputs/relativeAbundanceHeatmap-mangrove-sample-phylum-PNG-16s.svg", dpi = 300, width = 18, height = 15)
-
-heatplot_linear <- heatplot + 
-  scale_fill_gradient2(
-        #colors = c("white", "#132B43"),
-        low = "white",
-        mid = "#a6bddb",
-        high = "#2b8cbe",
-        midpoint = 0.5,
-        na.value = "white",
-        limits = c(0,1)
-        )
-ggsave(heatplot_linear, filename = "./Outputs/relativeAbundanceHeatmapLinear-mangrove-sample-phylum-PNG-16s.svg", dpi = 300, width = 18, height = 15)
 ```
 
 # Ordinations
@@ -1722,37 +1330,23 @@ makeNMDSSingleHostSection <- function(ps.variable, label.variable, file.variable
 ## Ordination Calculations and Plots
 #makeNMDSSimple(ps.variable = ps.png.bac, label.variable = "PNG - 16S", file.variable = "PNG-16s")
 
-#ps.png.bac.woSA_Mot_Pn_5 <- prune_samples(ps.png.bac@sam_data$sampleName != "SA_Mot_Pn_5", ps.png.bac)
+makeNMDSSimple(ps.variable = ps.png.bac.coral, label.variable = "Coral - PNG - 16S", file.variable = "coral-PNG-16s")
 
-#makeNMDSSimple(ps.variable = ps.png.bac.woSA_Mot_Pn_5, label.variable = "PNG without SA_Mot_Pn_5 - 16S", file.variable = "PNG-16s-woSA_Mot_Pn_5")
+makeNMDSSimple(ps.variable = ps.png.bac.ps, label.variable = "Pachyseris speciosa - PNG - 16S", file.variable = "ps-PNG-16s")
+makeNMDSSimple(ps.variable = ps.png.bac.pl, label.variable = "Porites lutea - PNG - 16S", file.variable = "pl-PNG-16s")
+makeNMDSSimple(ps.variable = ps.png.bac.dh, label.variable = "Diploastrea heliopora - PNG - 16S", file.variable = "dh-PNG-16s")
+makeNMDSSimple(ps.variable = ps.png.bac.pa, label.variable = "Pocillopora acuta - PNG - 16S", file.variable = "pa-PNG-16s")
 
-makeNMDSSimple(ps.variable = ps.png.bac.mangrove, label.variable = "Mangrove - PNG - 16S", file.variable = "mangrove-PNG-16s")
-
-makeNMDSSimple(ps.variable = ps.png.bac.aa, label.variable = "Avicinea alba - PNG - 16S", file.variable = "aa-PNG-16s")
-makeNMDSSimple(ps.variable = ps.png.bac.sa, label.variable = "Sonneratia alba - PNG - 16S", file.variable = "sa-PNG-16s")
-
-makeNMDSSimple(ps.variable = ps.png.bac.mangrove.fruit, label.variable = "Mangrove Fruit - PNG - 16S", file.variable = "mangroveFruit-PNG-16s")
-makeNMDSSimple(ps.variable = ps.png.bac.mangrove.leaf, label.variable = "Mangrove Leaf - PNG - 16S", file.variable = "mangroveLeaf-PNG-16s")
-makeNMDSSimple(ps.variable = ps.png.bac.mangrove.pneumatophore, label.variable = "Mangrove Pneumatophore - PNG - 16S", file.variable = "mangrovePneumatophore-PNG-16s")
-makeNMDSSimple(ps.variable = ps.png.bac.mangrove.sediment, label.variable = "Mangrove Sediment - PNG - 16S", file.variable = "mangroveSediment-PNG-16s")
-
-makeNMDSSingleFull(ps.variable = ps.png.bac.mangrove, label.variable = "Mangrove - PNG - 16S", file.variable = "mangrove-PNG-16s")
-makeNMDSSingleHostSection(ps.variable = ps.png.bac.mangrove.fruit, label.variable = "Mangrove Fruit - PNG - 16S", file.variable = "mangroveFruit-PNG-16s")
-makeNMDSSingleHostSection(ps.variable = ps.png.bac.mangrove.leaf, label.variable = "Mangrove Leaf - PNG - 16S", file.variable = "mangroveLeaf-PNG-16s")
-makeNMDSSingleHostSection(ps.variable = ps.png.bac.mangrove.pneumatophore, label.variable = "Mangrove Pneumatophore - PNG - 16S", file.variable = "mangrovePneumatophore-PNG-16s")
-makeNMDSSingleHostSection(ps.variable = ps.png.bac.mangrove.sediment, label.variable = "Mangrove Sediment - PNG - 16S", file.variable = "mangroveSediment-PNG-16s")
-
-# Excluding sediment samples:
-makeNMDSSingleFull(ps.variable = ps.png.bac.mangrove.nosediment, label.variable = "Mangrove Excluding Sediment - PNG - 16S", file.variable = "mangroveNoSediment-PNG-16S")
+makeNMDSSingleFull(ps.variable = ps.png.bac.coral, label.variable = "Mangrove - PNG - 16S", file.variable = "coral-PNG-16s")
 ```
 
 # PERMANOVA
 ```{r}
-ps.png.bac.mangrove.permanova <- prune_samples(sample_sums(ps.png.bac.mangrove) > 0, ps.png.bac.mangrove)
-ps.png.bac.mangrove.permanova <- prune_taxa(taxa_sums(ps.png.bac.mangrove.permanova) > 0, ps.png.bac.mangrove.permanova)
-ps.png.bac.mangrove.permanova <- transform_sample_counts(ps.png.bac.mangrove.permanova, function(otu){otu/sum(otu)})
-otu = as.data.frame(otu_table(ps.png.bac.mangrove.permanova, taxa_are_rows = FALSE))
-meta = as.data.frame(sample_data(ps.png.bac.mangrove.permanova))
+ps.png.bac.coral.permanova <- prune_samples(sample_sums(ps.png.bac.coral) > 0, ps.png.bac.coral)
+ps.png.bac.coral.permanova <- prune_taxa(taxa_sums(ps.png.bac.coral.permanova) > 0, ps.png.bac.coral.permanova)
+ps.png.bac.coral.permanova <- transform_sample_counts(ps.png.bac.coral.permanova, function(otu){otu/sum(otu)})
+otu = as.data.frame(otu_table(ps.png.bac.coral.permanova, taxa_are_rows = FALSE))
+meta = as.data.frame(sample_data(ps.png.bac.coral.permanova))
 df = data.frame(sampleName = meta$sampleName, site = meta$site, host = meta$host, hostTaxa = meta$hostTaxa, hostSection = meta$hostSection)
 
 ## Checking the Homogeneity Condition
@@ -1763,9 +1357,9 @@ anova(betadisper(dist, meta$site))
 anova(betadisper(dist, meta$hostSection))
 
 ## Test
-permanova <- adonis2(otu ~ hostSection * site * host, data = df, by = "terms") #  * hostTaxa
-sink("./Outputs/adonis_table-mangrove-PNG-16s.txt")
-noquote("PERMANOVA for Mangrove Table:")
+permanova <- adonis2(otu ~ site * host, data = df, by = "terms") #  * hostTaxa
+sink("./Outputs/adonis_table-coral-PNG-16s.txt")
+noquote("PERMANOVA for Coral Table:")
 permanova
 sink(NULL)
 
@@ -1790,43 +1384,12 @@ pairwise.adonis <- function(x,factors, sim.method = 'bray', p.adjust.m ='bonferr
 
 ### Site
 padonis_site <- pairwise.adonis(otu, as.character(meta$site))
-sink("./Outputs/padonis_site-aa-PNG-16s.txt")
+sink("./Outputs/padonis_site-coral-PNG-16s.txt")
 noquote("Pairwise adonis between sites (Bonferroni corrected Pvalues):")
 sink(NULL)
-write.table(padonis_site, "./Outputs/padonis_site-mangrove-PNG-16s.txt", sep = "\t", quote = FALSE, append = TRUE)
-
-### Host Section
-padonis_hostSection <- pairwise.adonis(otu, as.character(meta$hostSection))
-sink("./Outputs/padonis_hostSection-aa-PNG-16s.txt")
-noquote("Pairwise adonis between host sections (Bonferroni corrected Pvalues):")
-sink(NULL)
-write.table(padonis_hostSection, "./Outputs/padonis_hostSection-mangrove-PNG-16s.txt", sep = "\t", quote = FALSE, append = TRUE)
+write.table(padonis_site, "./Outputs/padonis_site-coral-PNG-16s.txt", sep = "\t", quote = FALSE, append = TRUE)
 
 ###Look into notes from class on permanova and how to check assumptions###
-```
-
-```{r}
-# Without sediment samples
-ps.png.bac.mangrove.permanova <- prune_samples(sample_sums(ps.png.bac.mangrove.nosediment) > 0, ps.png.bac.mangrove.nosediment)
-ps.png.bac.mangrove.permanova <- prune_taxa(taxa_sums(ps.png.bac.mangrove.permanova) > 0, ps.png.bac.mangrove.permanova)
-ps.png.bac.mangrove.permanova <- transform_sample_counts(ps.png.bac.mangrove.permanova, function(otu){otu/sum(otu)})
-otu = as.data.frame(otu_table(ps.png.bac.mangrove.permanova, taxa_are_rows = FALSE))
-meta = as.data.frame(sample_data(ps.png.bac.mangrove.permanova))
-df = data.frame(sampleName = meta$sampleName, site = meta$site, host = meta$host, hostTaxa = meta$hostTaxa, hostSection = meta$hostSection)
-
-## Checking the Homogeneity Condition
-#Note the assumption of similar multivariate spread among the groups, ie. analogous to variance homogeneity
-#Permanova result may be potentially explained by significant different spreads within the groups themselves
-dist <- vegdist(otu)
-anova(betadisper(dist, meta$site))
-anova(betadisper(dist, meta$hostSection))
-
-## Test
-permanova <- adonis2(otu ~ hostSection * site * host, data = df, by = "terms") #  * hostTaxa
-sink("./Outputs/adonis_table-mangrove-noSediment-PNG-16s.txt")
-noquote("PERMANOVA for Mangrove excluding Sediment Table:")
-permanova
-sink(NULL)
 ```
 
 # Core Microbiome & Venn Diagrams
@@ -1836,63 +1399,50 @@ library(microbiome)
 
 # Atleast 10% relative abundance in atleast 20% of samples, across mangroves, host species, host sections.
 
-core.mangrove <- core_members(ps.png.bac.mangrove, detection = 10/100, prevalence = 20/100)
-core.mangrove.noSediment <- core_members(ps.png.bac.mangrove.nosediment, detection = 10/100, prevalence = 20/100)
-core.aa <- core_members(ps.png.bac.aa, detection = 10/100, prevalence = 20/100)
-core.aa.noSediment <- core_members(subset_samples(ps.png.bac.aa, hostSection != "Sediment"), detection = 10/100, prevalence = 20/100)
-core.sa <- core_members(ps.png.bac.sa, detection = 10/100, prevalence = 20/100)
-core.sa.noSediment <- core_members(subset_samples(ps.png.bac.sa, hostSection != "Sediment"), detection = 10/100, prevalence = 20/100)
-core.mangroveFruit <- core_members(ps.png.bac.mangrove.fruit, detection = 10/100, prevalence = 20/100)
-core.mangroveLeaf <- core_members(ps.png.bac.mangrove.leaf, detection = 10/100, prevalence = 20/100)
-core.mangrovePneumatophore <- core_members(ps.png.bac.mangrove.pneumatophore, detection = 10/100, prevalence = 20/100)
-core.mangroveSediment <- core_members(ps.png.bac.mangrove.sediment, detection = 10/100, prevalence = 20/100)
+core.coral <- core_members(ps.png.bac.coral, detection = 10/100, prevalence = 20/100)
+core.ps <- core_members(ps.png.bac.ps, detection = 10/100, prevalence = 20/100)
+core.pl <- core_members(ps.png.bac.pl, detection = 10/100, prevalence = 20/100)
+core.dh <- core_members(ps.png.bac.dh, detection = 10/100, prevalence = 20/100)
+core.pa <- core_members(ps.png.bac.pa, detection = 10/100, prevalence = 20/100)
 
-allCoreASVs <- sort(unique(c(core.mangrove, core.mangrove.noSediment, core.aa, core.sa, core.mangroveFruit, core.mangroveLeaf, core.mangrovePneumatophore, core.mangroveSediment)))
+allCoreASVs <- sort(unique(c(core.coral, core.ps, core.pl, core.dh, core.pa)))
 coreASVs <- data.frame(t(allCoreASVs))
 colnames(coreASVs) <- coreASVs[1,]
 coreASVs <- coreASVs[-1,]
 coreASVs["ASVID",] <- allCoreASVs
-coreASVs["Mangrove",] <- logical(ncol(coreASVs))
-coreASVs["Mangrove excluding Sediment",] <- logical(ncol(coreASVs))
-coreASVs["AA",] <- logical(ncol(coreASVs))
-coreASVs["AA excluding Sediment",] <- logical(ncol(coreASVs))
-coreASVs["SA",] <- logical(ncol(coreASVs))
-coreASVs["SA excluding Sediment",] <- logical(ncol(coreASVs))
-coreASVs["Mangrove Fruit",] <- logical(ncol(coreASVs))
-coreASVs["Mangrove Leaf",] <- logical(ncol(coreASVs))
-coreASVs["Mangrove Pneumatophore",] <- logical(ncol(coreASVs))
-coreASVs["Mangrove Sediment",] <- logical(ncol(coreASVs))
+coreASVs["Coral",] <- logical(ncol(coreASVs))
+coreASVs["PS",] <- logical(ncol(coreASVs))
+coreASVs["PL",] <- logical(ncol(coreASVs))
+coreASVs["DH",] <- logical(ncol(coreASVs))
+coreASVs["PA",] <- logical(ncol(coreASVs))
 
-coreASVs["Mangrove",core.mangrove] <- TRUE
-coreASVs["Mangrove excluding Sediment",core.mangrove.noSediment] <- TRUE
-coreASVs["AA",core.aa] <- TRUE
-coreASVs["AA excluding Sediment",core.aa.noSediment] <- TRUE
-coreASVs["SA",core.sa] <- TRUE
-coreASVs["SA excluding Sediment",core.sa.noSediment] <- TRUE
-coreASVs["Mangrove Fruit",core.mangroveFruit] <- TRUE
-coreASVs["Mangrove Leaf",core.mangroveLeaf] <- TRUE
-coreASVs["Mangrove Pneumatophore",core.mangrovePneumatophore] <- TRUE
-coreASVs["Mangrove Sediment",core.mangroveSediment] <- TRUE
+coreASVs["Coral", core.coral] <- TRUE
+coreASVs["PS", core.ps] <- TRUE
+coreASVs["PL", core.pl] <- TRUE
+coreASVs["DH", core.dh] <- TRUE
+coreASVs["PA", core.pa] <- TRUE
 coreASVs <- data.frame(t(coreASVs))
 
-coreTaxa <- data.frame(ASVID = allCoreASVs, data.frame(tax_table(ps.png.bac.mangrove)[allCoreASVs,]))
+coreTaxa <- data.frame(ASVID = allCoreASVs, data.frame(tax_table(ps.png.bac.coral)[allCoreASVs,]))
 
 core_microbiome <- left_join(coreTaxa, coreASVs)
 
-write.csv(core_microbiome, "./Outputs/core_microbiome-mangrove-PNG-16s.csv")
+write.csv(core_microbiome, "./Outputs/core_microbiome-coral-PNG-16s.csv")
 
-core_microbiome[core_microbiome$Mangrove == TRUE,]
-core_microbiome[core_microbiome$Mangrove.excluding.Sediment == TRUE,]
+core_microbiome[core_microbiome$Coral == TRUE,]
 
-length(core_microbiome[core_microbiome$AA == TRUE & core_microbiome$SA == TRUE,]$ASVID)
-length(core_microbiome[core_microbiome$AA.excluding.Sediment == TRUE & core_microbiome$SA.excluding.Sediment == TRUE,]$ASVID)
+length(core_microbiome[core_microbiome$PS == TRUE & 
+                         core_microbiome$PL == TRUE & 
+                         core_microbiome$DH == TRUE & 
+                         core_microbiome$PA == TRUE
+                       ,]$ASVID)
 
-svglite("./Outputs/coreMicrobiomeHeatmap-mangrove-PNG-16S.svg")
-generateHeatmapTaxaSpecific(ps.png.bac.mangrove, sample_arrange = c("hostSection", "host", "site"), taxaInclude = core_microbiome[core_microbiome$AA == TRUE & core_microbiome$SA == TRUE,]$ASVID)
-dev.off()
-
-svglite("./Outputs/coreMicrobiomeHeatmap-mangrove_noSediment-PNG-16S.svg")
-generateHeatmapTaxaSpecific(ps.png.bac.mangrove, sample_arrange = c("hostSection", "host", "site"), taxaInclude = core_microbiome[core_microbiome$AA.excluding.Sediment == TRUE & core_microbiome$SA.excluding.Sediment == TRUE,]$ASVID)
+svglite("./Outputs/coreMicrobiomeHeatmap-coral-PNG-16S.svg")
+generateHeatmapTaxaSpecific(ps.png.bac.coral, sample_arrange = c("hostSection", "host", "site"), taxaInclude = core_microbiome[core_microbiome$PS == TRUE & 
+                         core_microbiome$PL == TRUE & 
+                         core_microbiome$DH == TRUE & 
+                         core_microbiome$PA == TRUE
+                         ,]$ASVID)
 dev.off()
 ```
 
@@ -1900,29 +1450,11 @@ dev.off()
 # Venn Diagrams
 library(MicEco)
 
-venn_hostSection <- ps_venn(ps.png.bac.mangrove, "hostSection", fills = list(fill = COLOR_HOST_SECTION[c("Fruit", "Leaf", "Pneumatophore", "Sediment")], alpha = 0.5), quantities = list(type=c("percent","counts")))
-venn_hostSection
-svglite("./Outputs/vennDiagram-hostSection-mangrove-PNG-16S.svg")
-venn_hostSection
-dev.off()
-
-venn_host <- ps_venn(ps.png.bac.mangrove, "host", fills = list(fill = COLOR_HOST[c("Avicinea alba", "Sonneratia alba")], alpha = 0.5), quantities = list(type=c("percent","counts")))
+venn_host <- ps_venn(ps.png.bac.coral, "host", fills = list(fill = COLOR_HOST[c("Pachyseris speciosa", "Porites lutea", "Diploastrea heliopora", "Pocillopora acuta")], alpha = 0.5), quantities = list(type=c("percent","counts")))
 venn_host
-svglite("./Outputs/vennDiagram-host-mangrove-PNG-16S.svg")
+svglite("./Outputs/vennDiagram-host-coral-PNG-16S.svg")
 venn_host
 dev.off()
-
-venn_host_noSediment <- ps_venn(ps.png.bac.mangrove.nosediment, "host", fills = list(fill = COLOR_HOST[c("Avicinea alba", "Sonneratia alba")], alpha = 0.5), quantities = list(type=c("percent","counts")))
-venn_host_noSediment
-svglite("./Outputs/vennDiagram-host-mangrove_noSediment-PNG-16S.svg")
-venn_host_noSediment
-dev.off()
-
-venn_hostSection_AA <- ps_venn(ps.png.bac.aa, "hostSection", fills = list(fill = COLOR_HOST_SECTION[c("Fruit", "Leaf", "Pneumatophore", "Sediment")], alpha = 0.5), quantities = list(type=c("percent","counts")))
-venn_hostSection_AA
-
-venn_hostSection_SA <- ps_venn(ps.png.bac.sa, "hostSection", fills = list(fill = COLOR_HOST_SECTION[c("Fruit", "Leaf", "Pneumatophore", "Sediment")], alpha = 0.5), quantities = list(type=c("percent","counts")))
-venn_hostSection_SA
 ```
 
 
@@ -1938,18 +1470,18 @@ library(corncob)
 
 ```{r}
 # Creating summarized taxa names to plot
-ps.png.bac.mangrove.DA <- prune_taxa(taxa_sums(ps.png.bac.mangrove) > 0, ps.png.bac.mangrove) %>% tax_fix()
-tableNewNames <- data.frame(ASVID = rownames(tax_table(ps.png.bac.mangrove.DA)), tax_table(ps.png.bac.mangrove.DA)) %>% 
+ps.png.bac.coral.DA <- prune_taxa(taxa_sums(ps.png.bac.coral) > 0, ps.png.bac.coral) %>% tax_fix()
+tableNewNames <- data.frame(ASVID = rownames(tax_table(ps.png.bac.coral.DA)), tax_table(ps.png.bac.coral.DA)) %>% 
   mutate(
-    Species = renameTaxafromASV(ASVID, psq = ps.png.bac.mangrove.DA) # Function from Heatmap section
+    Species = renameTaxafromASV(ASVID, psq = ps.png.bac.coral.DA) # Function from Heatmap section
   )
-tax_table(ps.png.bac.mangrove.DA)[,7] <- tableNewNames$Species
+tax_table(ps.png.bac.coral.DA)[,7] <- tableNewNames$Species
 ```
 
 ```{r}
 # Creating metadata field for host tissue versus sediment sectionSource
 
-metaNew <- data.frame(sample_data(ps.png.bac.mangrove.DA))
+metaNew <- data.frame(sample_data(ps.png.bac.coral.DA))
 
 metaNew <- metaNew %>% 
   mutate(
@@ -1960,9 +1492,9 @@ metaNew <- metaNew %>%
     sectionSource = as.factor(sectionSource)
   )
 
-sample_data(ps.png.bac.mangrove.DA) <- metaNew
+sample_data(ps.png.bac.coral.DA) <- metaNew
 
-psra.png.bac.mangrove.DA <- transform_sample_counts(ps.png.bac.mangrove.DA, function(otu){otu/sum(otu)})
+psra.png.bac.coral.DA <- transform_sample_counts(ps.png.bac.coral.DA, function(otu){otu/sum(otu)})
 ```
 
 
@@ -1971,28 +1503,12 @@ psra.png.bac.mangrove.DA <- transform_sample_counts(ps.png.bac.mangrove.DA, func
 
 ## Differentially abundant taxa
 set.seed(123)
-sample_data(ps.png.bac.mangrove.DA) <- metaNew %>% 
-  mutate(
-    hostSection = factor(hostSection, levels = c("Sediment", "Pneumatophore", "Leaf", "Fruit"))
-  )
-hostSection_abun_analysis <- differentialTest(formula = ~ hostSection,
-                                         phi.formula = ~ hostSection,
-                                         formula_null = ~ 1,
-                                         phi.formula_null = ~ hostSection,
-                                         test = "Wald", boot = FALSE,
-                                         data = ps.png.bac.mangrove.DA,
-                                         fdr_cutoff = 0.05)
-hostSection_abun_analysis
-hostSection_abun_analysis$significant_taxa
-#otu_to_taxonomy(OTU = hostSection_abun_analysis$significant_taxa, data = ps.png.bac.mangrove.DA)
-diff_taxa_hostSection_corncob <- hostSection_abun_analysis$significant_taxa
-
 site_abun_analysis <- differentialTest(formula = ~ site,
                                          phi.formula = ~ site,
                                          formula_null = ~ 1,
                                          phi.formula_null = ~ site,
                                          test = "Wald", boot = FALSE,
-                                         data = ps.png.bac.mangrove.DA,
+                                         data = ps.png.bac.coral.DA,
                                          fdr_cutoff = 0.05)
 site_abun_analysis
 site_abun_analysis$significant_taxa
@@ -2003,40 +1519,205 @@ host_abun_analysis <- differentialTest(formula = ~ host,
                                          formula_null = ~ 1,
                                          phi.formula_null = ~ host,
                                          test = "Wald", boot = FALSE,
-                                         data = ps.png.bac.mangrove.DA,
+                                         data = ps.png.bac.coral.DA,
                                          fdr_cutoff = 0.05)
 host_abun_analysis
 host_abun_analysis$significant_taxa
 diff_taxa_host_corncob <- host_abun_analysis$significant_taxa
 
-sectionSource_abun_analysis <- differentialTest(formula = ~ sectionSource,
-                                         phi.formula = ~ sectionSource,
-                                         formula_null = ~ 1,
-                                         phi.formula_null = ~ sectionSource,
-                                         test = "Wald", boot = FALSE,
-                                         data = ps.png.bac.mangrove.DA,
-                                         fdr_cutoff = 0.05)
-sectionSource_abun_analysis
-sectionSource_abun_analysis$significant_taxa
-#otu_to_taxonomy(OTU = sectionSource_abun_analysis$significant_taxa, data = ps.png.bac.mangrove.DA)
-diff_taxa_sectionSource_corncob <- sectionSource_abun_analysis$significant_taxa
-
 ## Differentially variable taxa
-#hostSection_var_analysis <- differentialTest(formula = ~ hostSection,
-#                                             phi.formula = ~ hostSection,
-#                                             formula_null = ~ hostSection,
+#host_var_analysis <- differentialTest(formula = ~ host,
+#                                             phi.formula = ~ host,
+#                                             formula_null = ~ host,
 #                                             phi.formula_null = ~ 1,
-#                                             data = ps.png.bac.mangrove.DA,
+#                                             data = ps.png.bac.coral.DA,
 #                                             test = "LRT", boot = FALSE,
 #                                             fdr_cutoff = 0.05)
-#hostSection_var_analysis
-#hostSection_var_analysis$significant_taxa
-#otu_to_taxonomy(OTU = hostSection_var_analysis$significant_taxa, data = ps.png.bac.mangrove.DA)
+#host_var_analysis
+#host_var_analysis$significant_taxa
+#otu_to_taxonomy(OTU = host_var_analysis$significant_taxa, data = ps.png.bac.coral.DA)
 ```
 
 ```{r}
-plot(hostSection_abun_analysis, level = c("Genus"))
-#plot(hostSection_var_analysis, level = c("Phylum"))
+plot(host_abun_analysis, level = c("Genus"))
+#plot(host_var_analysis, level = c("Phylum"))
+```
+
+### Species specific analysis (TODO)
+```{r}
+library(corncob)
+ps.png.bac.ps.pruned
+
+ps.png.bac.aa.pruned.phylum <- phyloseq::tax_glom(ps.png.bac.aa.pruned, "Phylum")
+ps.png.bac.aa.pruned.phylum
+
+ps.png.bac.aa.pruned.genus <- phyloseq::tax_glom(ps.png.bac.aa.pruned, "Genus", NArm = FALSE)
+ps.png.bac.aa.pruned.genus
+```
+
+```{r}
+# Null model on Desulfobacteriota
+corncob <- bbdml(formula = ASV1506 ~ 1,
+             phi.formula = ~ 1,
+             data = ps.png.bac.aa.pruned.phylum)
+plot(corncob, B = 50)
+plot(corncob, total = TRUE, shape = "hostSection", color = "site", B = 50)
+```
+
+```{r}
+# Adding covariates
+corncob_hostSection <- bbdml(formula = ASV1506 ~ hostSection,
+                       phi.formula = ~ hostSection,
+                       data = ps.png.bac.aa.pruned.phylum)
+plot(corncob_hostSection, total = FALSE, shape = "hostSection", color = "site", B = 50)
+plot(corncob_hostSection, total = TRUE, shape = "hostSection", color = "site", B = 50)
+```
+
+```{r}
+# Statistical testing for model selection
+lrtest(mod_null = corncob, mod = corncob_hostSection)
+```
+
+```{r}
+# Parameter Interpretation
+summary(corncob_hostSection)
+```
+
+```{r}
+# Analysis for multiple taxa
+
+## Differentially abundant taxa
+set.seed(1)
+hostSection_abun_analysis <- differentialTest(formula = ~ hostSection,
+                                         phi.formula = ~ hostSection,
+                                         formula_null = ~ 1,
+                                         phi.formula_null = ~ hostSection,
+                                         test = "Wald", boot = FALSE,
+                                         data = ps.png.bac.aa.pruned.genus,
+                                         fdr_cutoff = 0.05)
+hostSection_abun_analysis
+hostSection_abun_analysis$significant_taxa
+otu_to_taxonomy(OTU = hostSection_abun_analysis$significant_taxa, data = ps.png.bac.aa.pruned.genus)
+
+site_abun_analysis <- differentialTest(formula = ~ site,
+                                         phi.formula = ~ site,
+                                         formula_null = ~ 1,
+                                         phi.formula_null = ~ site,
+                                         test = "Wald", boot = FALSE,
+                                         data = ps.png.bac.aa.pruned.genus,
+                                         fdr_cutoff = 0.05)
+site_abun_analysis
+site_abun_analysis$significant_taxa
+
+## Differentially variable taxa
+set.seed(1)
+hostSection_var_analysis <- differentialTest(formula = ~ hostSection,
+                                             phi.formula = ~ hostSection,
+                                             formula_null = ~ hostSection,
+                                             phi.formula_null = ~ 1,
+                                             data = ps.png.bac.aa.pruned.phylum,
+                                             test = "LRT", boot = FALSE,
+                                             fdr_cutoff = 0.05)
+hostSection_var_analysis
+hostSection_var_analysis$significant_taxa
+otu_to_taxonomy(OTU = hostSection_var_analysis$significant_taxa, data = ps.png.bac.aa.pruned.phylum)
+```
+
+```{r}
+# Comparing between sediment and host tissue samples
+ps.png.bac.aa.pruned.genus.new <- ps.png.bac.aa.pruned.genus
+
+meta.new <- sample_data(ps.png.bac.aa.pruned.genus.new)
+meta.new$sourceBiological <- meta.new$hostSection %in% c("Tissue", "Fruit", "Leaf", "Pneumatophore", "Rhizome", "Root")
+meta.new$sourceAboveGround <- meta.new$hostSection %in% c("Tissue", "Fruit", "Leaf")
+sample_data(ps.png.bac.aa.pruned.genus.new) <- sample_data(meta.new)
+
+## For sourceBiological
+set.seed(1)
+sourceBiological_abun_analysis <- differentialTest(formula = ~ sourceBiological,
+                                         phi.formula = ~ sourceBiological,
+                                         formula_null = ~ 1,
+                                         phi.formula_null = ~ sourceBiological,
+                                         test = "Wald", boot = FALSE,
+                                         data = ps.png.bac.aa.pruned.genus.new,
+                                         fdr_cutoff = 0.05)
+sourceBiological_abun_analysis
+sourceBiological_abun_analysis$significant_taxa
+otu_to_taxonomy(OTU = sourceBiological_abun_analysis$significant_taxa, data = ps.png.bac.aa.pruned.genus.new)
+length(sourceBiological_abun_analysis$significant_taxa)
+plot(sourceBiological_abun_analysis, level = c("Genus"), main = "Differential Abundance for sourceBiological")
+
+sourceBiological_var_analysis <- differentialTest(formula = ~ sourceBiological,
+                                         phi.formula = ~ sourceBiological,
+                                         formula_null = ~ sourceBiological,
+                                         phi.formula_null = ~ 1,
+                                         test = "Wald", boot = FALSE,
+                                         data = ps.png.bac.aa.pruned.genus.new,
+                                         fdr_cutoff = 0.05)
+sourceBiological_var_analysis
+sourceBiological_var_analysis$significant_taxa
+otu_to_taxonomy(OTU = sourceBiological_var_analysis$significant_taxa, data = ps.png.bac.aa.pruned.genus.new)
+length(sourceBiological_var_analysis$significant_taxa)
+plot(sourceBiological_var_analysis, level = c("Genus"), main = "Differential Variance for sourceBiological")
+
+
+
+## For sourceAboveGround
+set.seed(1)
+sourceAboveGround_abun_analysis <- differentialTest(formula = ~ sourceAboveGround,
+                                         phi.formula = ~ sourceAboveGround,
+                                         formula_null = ~ 1,
+                                         phi.formula_null = ~ sourceAboveGround,
+                                         test = "Wald", boot = FALSE,
+                                         data = ps.png.bac.aa.pruned.genus.new,
+                                         fdr_cutoff = 0.05)
+sourceAboveGround_abun_analysis
+sourceAboveGround_abun_analysis$significant_taxa
+otu_to_taxonomy(OTU = sourceAboveGround_abun_analysis$significant_taxa, data = ps.png.bac.aa.pruned.genus.new)
+length(sourceAboveGround_abun_analysis$significant_taxa)
+plot(sourceAboveGround_abun_analysis, level = c("Genus"), main = "Differential Abundance for sourceAboveGround")
+
+sourceAboveGround_var_analysis <- differentialTest(formula = ~ sourceAboveGround,
+                                         phi.formula = ~ sourceAboveGround,
+                                         formula_null = ~ sourceAboveGround,
+                                         phi.formula_null = ~ 1,
+                                         test = "Wald", boot = FALSE,
+                                         data = ps.png.bac.aa.pruned.genus.new,
+                                         fdr_cutoff = 0.05)
+sourceAboveGround_var_analysis
+sourceAboveGround_var_analysis$significant_taxa
+otu_to_taxonomy(OTU = sourceAboveGround_var_analysis$significant_taxa, data = ps.png.bac.aa.pruned.genus.new)
+length(sourceAboveGround_var_analysis$significant_taxa)
+plot(sourceAboveGround_var_analysis, level = c("Genus"), main = "Differential Variance for sourceAboveGround")
+
+sourceAboveGround_abun_analysis$significant_taxa[!(sourceAboveGround_abun_analysis$significant_taxa %in% sourceAboveGround_var_analysis$significant_taxa)]
+
+```
+
+```{r}
+plot(hostSection_abun_analysis, level = c("Family"))
+```
+
+```{r}
+plot(hostSection_var_analysis, level = c("Phylum"))
+```
+
+```{r}
+# Taxa for which models were not fit
+which(is.na(hostSection_abun_analysis$p)) %>% names
+otu_to_taxonomy(OTU = which(is.na(hostSection_abun_analysis$p)) %>% names, data = ps.png.bac.aa.pruned.phylum)
+
+which(is.na(hostSection_var_analysis$p)) %>% names
+#otu_to_taxonomy(OTU = which(is.na(hostSection_var_analysis$p)) %>% names, data = ps.png.bac.aa.pruned.phylum)
+```
+```{r}
+# Fitting the mdoel individually to one of the unsuccessful automatic fittings by letting the model select the initiatlizations automatically
+## ASV48368 = SAR324 clade
+check_ASV48368 <- bbdml(formula = ASV48368 ~ hostSection,
+                        phi.formula = ~ hostSection,
+                        data = ps.png.bac.aa.pruned.phylum)
+
+# While the model fits, we should be skeptical of any statistical model fit on a single observed count!
 ```
 
 ## ANCOM-BC2
@@ -2048,35 +1729,10 @@ library(DT)
 ```
 
 ```{r}
-# hostSection
-set.seed(123)
-output = ancombc2(data = psra.png.bac.mangrove, 
-                             fix_formula = "host + hostSection + site", rand_formula = NULL,
-                             p_adj_method = "holm", pseudo_sens = TRUE,
-                             prv_cut = 0.01, lib_cut = 0, s0_perc = 0.05, # Settings changed for prv_cut to 1%
-                             group = "hostSection", struc_zero = TRUE, neg_lb = TRUE,
-                             alpha = 0.05, n_cl = 2, verbose = TRUE,
-                             global = TRUE, pairwise = TRUE, 
-                             dunnet = TRUE, trend = FALSE,
-                             iter_control = list(tol = 1e-5, max_iter = 20, 
-                                                 verbose = TRUE),
-                             em_control = list(tol = 1e-5, max_iter = 100),
-                             lme_control = lme4::lmerControl(), 
-                             mdfdr_control = list(fwer_ctrl_method = "holm", B = 100), 
-                             trend_control = NULL)
-
-res_prim = output$res
-res_pair = output$res_pair
-res_global = output$res_global
-
-diff_taxa_hostSection_ancombc <- res_global[res_global$passed_ss, "taxon"]
-```
-
-```{r}
 # host
 set.seed(123)
-output = ancombc2(data = psra.png.bac.mangrove, 
-                             fix_formula = "host + hostSection + site", rand_formula = NULL,
+output = ancombc2(data = psra.png.bac.coral, 
+                             fix_formula = "host + site", rand_formula = NULL,
                              p_adj_method = "holm", pseudo_sens = TRUE,
                              prv_cut = 0.01, lib_cut = 0, s0_perc = 0.05, # Settings changed for prv_cut to 1%
                              group = "host", struc_zero = TRUE, neg_lb = TRUE,
@@ -2094,14 +1750,14 @@ res_prim = output$res
 res_pair = output$res_pair
 res_global = output$res_global
 
-diff_taxa_host_ancombc <- res_prim[res_prim$`passed_ss_hostSonneratia alba`, "taxon"]
+diff_taxa_host_ancombc <- res_global[res_global$passed_ss, "taxon"]
 ```
 
 ```{r}
 # site
 set.seed(123)
-output = ancombc2(data = psra.png.bac.mangrove, 
-                             fix_formula = "host + hostSection + site", rand_formula = NULL,
+output = ancombc2(data = psra.png.bac.coral, 
+                             fix_formula = "host + site", rand_formula = NULL,
                              p_adj_method = "holm", pseudo_sens = TRUE,
                              prv_cut = 0.01, lib_cut = 0, s0_perc = 0.05, # Settings changed for prv_cut to 1%
                              group = "site", struc_zero = TRUE, neg_lb = TRUE,
@@ -2122,126 +1778,50 @@ res_global = output$res_global
 diff_taxa_site_ancombc <- res_global[res_global$passed_ss, "taxon"]
 ```
 
-```{r}
-# sectionSource
-set.seed(123)
-output = ancombc2(data = psra.png.bac.mangrove.DA, 
-                             fix_formula = "host + site + sectionSource", rand_formula = NULL,
-                             p_adj_method = "holm", pseudo_sens = TRUE,
-                             prv_cut = 0.01, lib_cut = 0, s0_perc = 0.05, # Settings changed for prv_cut to 1%
-                             group = "sectionSource", struc_zero = TRUE, neg_lb = TRUE,
-                             alpha = 0.05, n_cl = 2, verbose = TRUE,
-                             global = TRUE, pairwise = TRUE, 
-                             dunnet = TRUE, trend = FALSE,
-                             iter_control = list(tol = 1e-5, max_iter = 20, 
-                                                 verbose = TRUE),
-                             em_control = list(tol = 1e-5, max_iter = 100),
-                             lme_control = lme4::lmerControl(), 
-                             mdfdr_control = list(fwer_ctrl_method = "holm", B = 100), 
-                             trend_control = NULL)
-
-res = output$res
-
-diff_taxa_sectionSource_ancombc <- res[res$passed_ss_sectionSourceSediment, "taxon"]
-```
-
 ## IndicSpecies
 ```{r}
 library(indicspecies)
 
-otu.mangrove.ra <- data.frame(otu_table(psra.png.bac.mangrove))
-meta.mangrove <- data.frame(sample_data(ps.png.bac.mangrove.DA))
+otu.coral.ra <- data.frame(otu_table(psra.png.bac.coral.DA))
+meta.coral <- data.frame(sample_data(ps.png.bac.coral.DA))
 
-indval_host <- multipatt(otu.mangrove.ra, meta.mangrove$host, func = "IndVal.g", 
+indval_host <- multipatt(otu.coral.ra, meta.coral$host, func = "IndVal.g", 
                     control = how(nperm=999),
                     allow.negative = TRUE) 
 summary(indval_host, indvalcomp=TRUE)
 diff_taxa_host_indicspecies <- rownames(indval_host$sign[replace_na(indval_host$sign$p.value < 0.05, FALSE),])
 
-indval_hostSection <- multipatt(otu.mangrove.ra, meta.mangrove$hostSection, func = "IndVal.g", 
-                    control = how(nperm=999),
-                    allow.negative = TRUE) 
-summary(indval_hostSection, indvalcomp=TRUE)
-diff_taxa_hostSection_indicspecies <- rownames(indval_hostSection$sign[replace_na(indval_hostSection$sign$p.value < 0.05, FALSE),])
-
-indval_site <- multipatt(otu.mangrove.ra, meta.mangrove$site, func = "IndVal.g", 
+indval_site <- multipatt(otu.coral.ra, meta.coral$site, func = "IndVal.g", 
                     control = how(nperm=999),
                     allow.negative = TRUE) 
 summary(indval_site, indvalcomp=TRUE)
 diff_taxa_site_indicspecies <- rownames(indval_site$sign[replace_na(indval_site$sign$p.value < 0.05, FALSE),])
-
-indval_sectionSource <- multipatt(otu.mangrove.ra, meta.mangrove$sectionSource, func = "IndVal.g", 
-                    control = how(nperm=999),
-                    allow.negative = TRUE) 
-summary(indval_sectionSource, indvalcomp=TRUE)
-diff_taxa_sectionSource_indicspecies <- rownames(indval_sectionSource$sign[replace_na(indval_sectionSource$sign$p.value < 0.05, FALSE),])
 ```
 
 ## Aggregating Taxa that are identified using all three methods as differentially abundant
-
-```{r}
-# hostSection
-diff_taxa_hostSection <- base::intersect(diff_taxa_hostSection_corncob, base::intersect(diff_taxa_hostSection_ancombc, diff_taxa_hostSection_indicspecies))
-write.csv(diff_taxa_hostSection, file = "./Outputs/DAtaxalist_hostSection-mangrove-PNG-16S.csv")
-length(diff_taxa_hostSection)
-
-diff_taxa_hostSection <- read.csv("./Outputs/DAtaxalist_hostSection-mangrove-PNG-16S.csv")
-diff_taxa_hostSection <- diff_taxa_hostSection$x
-
-hostSection_DA_analysis <- hostSection_abun_analysis
-hostSection_DA_analysis$significant_taxa <- hostSection_DA_analysis$significant_taxa[diff_taxa_hostSection_corncob %in% diff_taxa_hostSection]
-hostSection_DA_analysis$significant_models <- hostSection_DA_analysis$significant_models[diff_taxa_hostSection_corncob %in% diff_taxa_hostSection]
-
-plot(hostSection_DA_analysis, level = "Species")
-svglite("./Outputs/DAtaxa_hostSection-mangrove-PNG-16S.svg")
-plot(hostSection_DA_analysis, level = "Species") + labs(color = "Differentially\nabundant") + scale_color_manual(values = c("TRUE" = "#e6194b", "FALSE" = "#46f0f0")) + coord_flip()
-dev.off()
-```
-
-```{r}
-# Crucial Microbes
-x = core_microbiome[core_microbiome$AA.excluding.Sediment == TRUE & core_microbiome$SA.excluding.Sediment == TRUE,]$ASVID
-
-y = hostSection_DA_analysis$significant_taxa
-
-z = base::intersect(x, y)
-
-z
-
-hostSection_crucial_analysis <- hostSection_abun_analysis
-hostSection_crucial_analysis$significant_taxa <- hostSection_crucial_analysis$significant_taxa[diff_taxa_hostSection_corncob %in% z]
-hostSection_crucial_analysis$significant_models <- hostSection_crucial_analysis$significant_models[diff_taxa_hostSection_corncob %in% z]
-
-plot(hostSection_crucial_analysis, level = "Species")
-svglite("./Outputs/DAtaxa_crucial-mangrove-PNG-16S.svg")
-plot(hostSection_crucial_analysis, level = "Species") + labs(color = "Differentially\nabundant") + scale_color_manual(values = c("TRUE" = "#e6194b", "FALSE" = "#46f0f0"))
-dev.off()
-
-plot(hostSection_crucial_analysis, level = "Species") + labs(color = "Differentially\nabundant") + scale_color_manual(values = c("TRUE" = "#e6194b", "FALSE" = "#46f0f0"))
-ggsave("./Outputs/crucial - DA plot -mangrove-PNG-16s.svg", width = 10, height = 4, dpi = 900)
-```
-
-
 ```{r}
 # host
 diff_taxa_host <- base::intersect(diff_taxa_host_corncob, base::intersect(diff_taxa_host_ancombc, diff_taxa_host_indicspecies))
-write.csv(diff_taxa_host, file = "./Outputs/DAtaxalist_host-mangrove-PNG-16S.csv")
+write.csv(diff_taxa_host, file = "./Outputs/DAtaxalist_host-coral-PNG-16S.csv")
 length(diff_taxa_host)
+
+diff_taxa_host <- read.csv("./Outputs/DAtaxalist_host-coral-PNG-16S.csv")
+diff_taxa_host <- diff_taxa_host$x
 
 host_DA_analysis <- host_abun_analysis
 host_DA_analysis$significant_taxa <- host_DA_analysis$significant_taxa[diff_taxa_host_corncob %in% diff_taxa_host]
 host_DA_analysis$significant_models <- host_DA_analysis$significant_models[diff_taxa_host_corncob %in% diff_taxa_host]
 
 plot(host_DA_analysis, level = "Species")
-svglite("./Outputs/DAtaxa_host-mangrove-PNG-16S.svg")
-plot(host_DA_analysis, level = "Species") + labs(color = "Differentially\nabundant") + scale_color_manual(values = c("TRUE" = "#e6194b", "FALSE" = "#46f0f0"))
+svglite("./Outputs/DAtaxa_host-coral-PNG-16S.svg")
+plot(host_DA_analysis, level = "Species") + labs(color = "Differentially\nabundant") + scale_color_manual(values = c("TRUE" = "#e6194b", "FALSE" = "#46f0f0")) + coord_flip()
 dev.off()
 ```
 
 ```{r}
 # site
 diff_taxa_site <- base::intersect(diff_taxa_site_corncob, base::intersect(diff_taxa_site_ancombc, diff_taxa_site_indicspecies))
-write.csv(diff_taxa_site, file = "./Outputs/DAtaxalist_site-mangrove-PNG-16S.csv")
+write.csv(diff_taxa_site, file = "./Outputs/DAtaxalist_site-coral-PNG-16S.csv")
 length(diff_taxa_site)
 
 site_DA_analysis <- site_abun_analysis
@@ -2249,62 +1829,10 @@ site_DA_analysis$significant_taxa <- site_DA_analysis$significant_taxa[diff_taxa
 site_DA_analysis$significant_models <- site_DA_analysis$significant_models[diff_taxa_site_corncob %in% diff_taxa_site]
 
 plot(site_DA_analysis, level = "Species")
-svglite("./Outputs/DAtaxa_site-mangrove-PNG-16S.svg")
+svglite("./Outputs/DAtaxa_site-coral-PNG-16S.svg")
 plot(site_DA_analysis, level = "Species") + labs(color = "Differentially\nabundant") + scale_color_manual(values = c("TRUE" = "#e6194b", "FALSE" = "#46f0f0"))
 dev.off()
 ```
-
-```{r}
-# sectionSource
-diff_taxa_sectionSource <- base::intersect(diff_taxa_sectionSource_corncob, base::intersect(diff_taxa_sectionSource_ancombc, diff_taxa_sectionSource_indicspecies))
-write.csv(diff_taxa_sectionSource, file = "./Outputs/DAtaxalist_sectionSource-mangrove-PNG-16S.csv")
-length(diff_taxa_sectionSource)
-
-sectionSource_DA_analysis <- sectionSource_abun_analysis
-sectionSource_DA_analysis$significant_taxa <- sectionSource_DA_analysis$significant_taxa[diff_taxa_sectionSource_corncob %in% diff_taxa_sectionSource]
-
-for(i in 1:length(sectionSource_DA_analysis$significant_models)){
-  
-}
-
-sectionSource_DA_analysis$significant_models <- sectionSource_DA_analysis$significant_models[diff_taxa_sectionSource_corncob %in% diff_taxa_sectionSource]
-
-sectionSource_DA_analysis$significant_taxa <- fct_reorder(sectionSource_DA_analysis$significant_taxa, )
-
-plot(sectionSource_DA_analysis, level = "Species")
-svglite("./Outputs/DAtaxa_sectionSource-mangrove-PNG-16S.svg")
-plot(sectionSource_DA_analysis, level = "Species") + labs(color = "Differentially\nabundant") + scale_color_manual(values = c("TRUE" = "#e6194b", "FALSE" = "#46f0f0")) + coord_flip()
-dev.off()
-
-sectionSource_DA_plot <- plot(sectionSource_DA_analysis, level = "Species") + labs(color = "Differentially\nabundant") + scale_color_manual(values = c("TRUE" = "#e6194b", "FALSE" = "#46f0f0")) + coord_flip() + theme(axis.text.x = element_text(size = 5))
-sectionSource_DA_plot
-ggsave("./Outputs/sectionSource - DA plot -mangrove-PNG-16s.svg", width = 16, height = 9, dpi = 900)
-
-
-# Sediment v Host Taxa & Core Host Taxa
-x = core_microbiome[core_microbiome$AA.excluding.Sediment == TRUE & core_microbiome$SA.excluding.Sediment == TRUE,]$ASVID
-
-y = sectionSource_DA_analysis$significant_taxa
-
-z = base::intersect(x, y)
-
-z
-
-hostSediment_crucial_analysis <- sectionSource_abun_analysis
-hostSediment_crucial_analysis$significant_taxa <- hostSediment_crucial_analysis$significant_taxa[diff_taxa_sectionSource_corncob %in% z]
-hostSediment_crucial_analysis$significant_models <- hostSediment_crucial_analysis$significant_models[diff_taxa_sectionSource_corncob %in% z]
-
-plot(hostSediment_crucial_analysis, level = "Species")
-svglite("./Outputs/DAtaxa_crucialHostSediment-mangrove-PNG-16S.svg")
-plot(hostSediment_crucial_analysis, level = "Species") + labs(color = "Differentially\nabundant") + scale_color_manual(values = c("TRUE" = "#e6194b", "FALSE" = "#46f0f0"))
-dev.off()
-
-plot(hostSediment_crucial_analysis, level = "Species") + labs(color = "Differentially\nabundant") + scale_color_manual(values = c("TRUE" = "#e6194b", "FALSE" = "#46f0f0"))
-ggsave("./Outputs/crucial host sediment - DA plot -mangrove-PNG-16S.svg", width = 10, height = 4, dpi = 900)
-
-```
-
-
 
 # Spatial Analysis
 ```{r}
@@ -2336,7 +1864,9 @@ rownames(gpsCoords) <- gpsCoords$site
 
 my.sites <- gpsCoords[order(gpsCoords$site),]
 my.sites
+```
 
+```{r}
 # Maps
 library(marmap)
 png.bathy <- getNOAA.bathy(lon1 = 143.0300, lon2 = 156.9167, lat1 =-11.9416, lat2 = -1.8114, 
@@ -2358,15 +1888,54 @@ ggplot() + geom_raster(data = env.layers.df, aes(x, y, fill = BO21_tempmean_ss))
 
 plot(png.bathy)
 points(my.sites$lon, my.sites$lat, col = COLOR_SITE, pch = 17)
+```
 
+```{r}
 my.sites.environment <- data.frame(Name = my.sites$site, extract(env.layers, my.sites[,c("lon", "lat")]))
 #write.csv(my.sites.environment,file="./sdmpredictorsData/PNG_env_extract_all.csv",row.names = TRUE)
 row.names(my.sites.environment) <- my.sites.environment$Name
-env_full <- my.sites.environment[meta$site,][,-1]
-row.names(env_full) <- meta$sampleName
+env_full <- my.sites.environment[meta.mangrove$site,][,-1]
+row.names(env_full) <- meta.mangrove$sampleName
 all_env_dist <- dist(as.matrix(env_full), method = "euclidean")
 colnames(env_full)
 
+```
+
+# Differentials Analysis (Songbird)
+```{r}
+# Creating BIOM table
+library(biomformat)
+
+biom_table <- make_biom(data.frame(t(otu.mangrove)))
+write_biom(biom_table, "./Outputs/biom_table-mangrove-PNG-16s.biom")
+
+# Creating sample metadata file
+meta_songbird <- merge.data.frame(meta.mangrove, env_full, by = 0) %>% 
+  mutate(
+    sectionSource = case_when(
+      hostSection == "Sediment" ~ "Sediment",
+      .default = "Host Tissue"
+    ),
+    sectionSource = as.factor(sectionSource)
+  )
+write_tsv(meta_songbird, "./Outputs/metadata_table-mangrove-PNG-16s.txt")
+
+# Variables available
+colnames(meta_songbird)
+```
+
+```{}
+# Script to run in python:
+
+songbird multinomial \
+	--input-biom data/png_mangrove/biom_table-mangrove-PNG-16s.biom \
+	--metadata-file data/png_mangrove/metadata_table-mangrove-PNG-16s.txt \
+	--formula "site+host+C(hostSection, Treatment("Sediment"))+C(sectionSource, Treatment("Host Tissue"))+BO_calcite+BO_cloudmean+BO_damean+BO_parmean+BO_ph+BO21_salinitymean_ss+BO21_chlomean_ss+BO21_curvelmean_ss+BO21_dissoxmean_ss+BO21_nitratemean_ss+BO21_phosphatemean_ss+BO21_ppmean_ss+BO21_silicatemean_ss++BO21_tempmean_ss+BO21_temprange_ss" \
+	--epochs 10000 \
+	--differential-prior 0.5 \
+	--summary-interval 1 \
+	--summary-dir results-png_mangrove
+    
 ```
 
 ## Mantel Test
@@ -3151,6 +2720,33 @@ dev.off()
 
 ```
 
+# LEfSe
+```{r}
+ps.png.bac.aa.phylum <- phyloseq::tax_glom(ps.png.bac.aa.pruned, "Phylum")
+ps.png.bac.aa.fruit.sediment.phylum <- subset_samples(ps.png.bac.aa.phylum, hostSection %in% c("Fruit", "Leaf"))
+ps.png.bac.aa.fruit.sediment.phylum <- prune_taxa(taxa_sums(ps.png.bac.aa.fruit.sediment.phylum) > 0, ps.png.bac.aa.fruit.sediment.phylum)
+psra.png.bac.aa.fruit.sediment.phylum <- transform_sample_counts(ps.png.bac.aa.fruit.sediment.phylum, function(otu){otu/sum(otu)})
+str(data.frame(psra.png.bac.aa.fruit.sediment.phylum@sam_data))
+
+
+# Converting phyloseq to Summarized Experiment
+library(mia)
+sera.png.bac.aa.fruit.sediment <- mia::makeTreeSummarizedExperimentFromPhyloseq(psra.png.bac.aa.fruit.sediment.phylum)
+
+library(lefser)
+table(sera.png.bac.aa.fruit.sediment$site, sera.png.bac.aa.fruit.sediment$hostSection)
+
+# Choosing only terminal nodes (does not support anymore)
+tn <- lefser::get_terminal_nodes(rownames(sera.png.bac.aa.fruit.sediment))
+sera.png.bac.aa.pruned.tn <- sera.png.bac.aa.fruit.sediment[tn,]
+
+set.seed(1234)
+res <- lefser(sera.png.bac.aa.fruit.sediment, # relative abundance
+              classCol = "hostSection",
+              subclassCol = "site",
+              groupCol = "hostSection")
+head(res)
+```
 
 # FAPROTAX
 ```{r}

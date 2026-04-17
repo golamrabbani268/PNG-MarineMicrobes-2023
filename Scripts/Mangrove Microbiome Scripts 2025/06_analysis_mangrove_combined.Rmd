@@ -1,0 +1,662 @@
+---
+title: "Mangrove Fungal Microbiome"
+author: "Golam Rabbani"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Naming convention
+## large.variable.A-B.names
+## regular_variable_names
+## CONSTANT_NAMES
+## funtionNames
+## ClassNames
+
+knitr::opts_knit$set(root.dir = normalizePath("./Working Files/")) 
+```
+
+```{r}
+getwd()
+```
+Loading packages...
+
+```{r}
+# Initialising
+library(vegan); packageVersion("vegan")
+library(phyloseq); packageVersion("phyloseq")
+library(dplyr); packageVersion("dplyr")
+library(tidyverse); packageVersion("tidyverse")
+library(ggplot2); packageVersion("ggplot2")
+library(viridis); packageVersion("viridis")
+library(svglite); packageVersion("svglite")
+library(ggstatsplot); packageVersion("ggstatsplot")
+library(ggpubr); packageVersion("ggpubr")
+library(scales); packageVersion("scales")
+library(RColorBrewer); packageVersion("RColorBrewer")
+library(MicEco); packageVersion("MicEco") # For Venn Diagram
+library(BiodiversityR); packageVersion("BiodiversityR") # For accumulation curve
+library(ggh4x)
+library(microbiome)
+library(ggnewscale)
+library(microViz)
+
+getwd()
+theme_set(theme_bw())
+set.seed(123)
+
+
+
+# Color palettes
+{
+COLOR_21 = c("#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", 
+             "#911eb4", "#46f0f0", "#f032e6", "#bcf60c", "#fabebe", 
+             "#008080", "#e6beff", "#9a6324", "#fffac8", "#800000", 
+             "#aaffc3", "#808000", "#ffd8b1", "#000075", "#997070", 
+             "#000000")
+COLOR_30 = c("#fcff5d", "#7dfc00", "#0ec434", "#228c68", "#8ad8e8", 
+             "#235b54", "#29bdab", "#3998f5", "#37294f", "#277da7", 
+             "#3750db", "#f22020", "#991919", "#ffcba5", "#e68f66", 
+             "#c56133", "#96341c", "#632819", "#ffc413", "#f47a22", 
+             "#2f2aa0", "#b732cc", "#772b9d", "#f07cab", "#d30b94", 
+             "#000000", "#c3a5b4", "#946aa2", "#5d4c86", "#aaaaaa")
+COLOR_10 = c("#6b5456", "#ec8d1b", "#6abf2a", "#8b53b7", "#70acbe", 
+             "#01c95b", "#c00014", "#31332f", "#f7d000", "#abba00")
+
+QUALITATIVE_COLOR_PAL = brewer.pal.info[brewer.pal.info$category == 'qual',]
+COLOR_74 = unlist(mapply(brewer.pal, QUALITATIVE_COLOR_PAL$maxcolors, rownames(QUALITATIVE_COLOR_PAL)))
+
+COLOR_SITE = c("#ec8d1b", "#8b53b7", "#70acbe", "#01c95b", "#c00014", "#f7d000")
+NAMES_SITE = c("Kavieng", "Kimbe Bay", "Madang", "Milne Bay", "Port Moresby", "Rabaul")
+names(COLOR_SITE) = NAMES_SITE
+
+COLOR_HOST = c("#e6194b", "#3cb44b", "#ffe119", "#4363d8", 
+               "#46f0f0", "#f032e6", "#f58231", "#911eb4")
+NAMES_HOST = c("Pachyseris speciosa", "Porites lutea", "Diploastrea heliopora", "Pocillopora acuta",
+               "Enhalus acoroides", "Thalassia hemprichii", "Avicinea alba", "Sonneratia alba")
+names(COLOR_HOST) = NAMES_HOST
+
+COLOR_HOST_TAXA = c("#aaffc3", "#e6beff", "#ffd8b1")
+NAMES_HOST_TAXA = c("Mangrove", "Seagrass", "Coral")
+names(COLOR_HOST_TAXA) = NAMES_HOST_TAXA
+
+COLOR_HOST_SECTION = c("#9a6324", "#f22020", "#7dfc00", "#228c68", "#ffc413", "#277da7", "#31332f")
+NAMES_HOST_SECTION = c("Tissue", "Fruit", "Leaf", "Pneumatophore", "Sediment", "Rhizome", "Root")
+names(COLOR_HOST_SECTION) = NAMES_HOST_SECTION
+}
+```
+
+# Network Analysis
+```{r}
+library(microbiome) # data analysis and visualisation
+library(phyloseq) # also the basis of data object. Data analysis and visualisation
+library(RColorBrewer) # nice color options
+library(ggpubr) # publication quality figures, based on ggplot2
+library(dplyr) # data handling
+library(network)
+library(intergraph)
+#library(ggnet)
+```
+
+```{r}
+# Analyze using SpiecEasi that follows Tipton et al. (2018) [https://github.com/zdk123/SpiecEasi]
+# SpiecEasi now allows for trans-kingdom analyses
+
+# Note: It assumes that each taxa is in it's own data matrix and 
+# that all samples are in all data matrices in the same order.
+# Reformat metadata accordingly for both separately
+
+# Making PS objects that are ordered and renamed correctly.
+coding_df <- read.csv("../../Resources/Name Coding.csv")
+coding_vector <- coding_df$Code
+names(coding_vector) <- coding_df$Name
+
+ps.bac <- readRDS("./Outputs/PNG_16S/phyloseq_updated-PNG-16s.RDS")
+ps.fun <- readRDS("./Outputs/PNG_ITS/phyloseq-PNG-ITS.RDS")
+
+substrRight <- function(x, n){
+  substr(x, nchar(x)-n+1, nchar(x))
+}
+
+## Bacteria
+taxa_names(ps.bac) <- paste0("Bac", taxa_names(ps.bac))
+meta.bac <- data.frame(sample_data(ps.bac))
+meta.bac <- meta.bac[order(rownames(meta.bac)),]
+otu.bac <- as.data.frame(otu_table(ps.bac))
+otu.bac <- otu.bac[order(rownames(otu.bac)),]
+
+meta.bac$sampleName <- paste(coding_vector[as.character(meta.bac$host)], coding_vector[as.character(meta.bac$site)], coding_vector[as.character(meta.bac$hostSection)], substrRight(paste0("0", gsub(".*?([0-9]+).*", "\\1", meta.bac$sampleName)), 2), sep = "-")
+row.names(meta.bac) <- meta.bac$sampleName
+rownames(otu.bac) <- meta.bac$sampleName
+
+meta.bac <- meta.bac[order(rownames(meta.bac)),]
+otu.bac <- otu.bac[order(rownames(otu.bac)),]
+
+ps.bac <- phyloseq(otu_table(otu.bac, taxa_are_rows = FALSE), 
+                   sample_data(meta.bac),
+                   tax_table(ps.bac))
+
+## Fungi
+taxa_names(ps.fun) <- paste0("Fun", taxa_names(ps.fun))
+meta.fun <- data.frame(sample_data(ps.fun))
+meta.fun <- meta.fun[order(rownames(meta.fun)),]
+otu.fun <- as.data.frame(otu_table(ps.fun))
+otu.fun <- otu.fun[order(rownames(otu.fun)),]
+
+meta.fun$sampleName <- paste(coding_vector[as.character(meta.fun$host)], coding_vector[as.character(meta.fun$site)], coding_vector[as.character(meta.fun$hostSection)], substrRight(paste0("0", gsub(".*?([0-9]+).*", "\\1", meta.fun$sampleName)), 2), sep = "-")
+row.names(meta.fun) <- meta.fun$sampleName
+rownames(otu.fun) <- meta.fun$sampleName
+
+meta.fun <- meta.fun[order(rownames(meta.fun)),]
+otu.fun <- otu.fun[order(rownames(otu.fun)),]
+
+ps.fun <- phyloseq(otu_table(otu.fun, taxa_are_rows = FALSE), 
+                   sample_data(meta.fun),
+                   tax_table(ps.fun))
+
+# Making Common Sets
+subset.names <- base::intersect(rownames(sample_data(ps.bac)), rownames(sample_data(ps.fun)))
+
+ps.bac.sub <- prune_samples(subset.names, ps.bac)
+ps.bac.sub <- prune_taxa(taxa_sums(ps.bac.sub) > 0, ps.bac.sub)
+ps.fun.sub <- prune_samples(subset.names, ps.fun)
+ps.fun.sub <- prune_taxa(taxa_sums(ps.fun.sub) > 0, ps.fun.sub)
+
+## Normalize (relative abundance)
+psra.bac <- transform_sample_counts(ps.bac, function(otu){otu/sum(otu)})
+psra.fun <- transform_sample_counts(ps.fun, function(otu){otu/sum(otu)})
+
+psra.bac.sub <- transform_sample_counts(ps.bac.sub, function(otu){otu/sum(otu)})
+psra.fun.sub <- transform_sample_counts(ps.fun.sub, function(otu){otu/sum(otu)})
+
+## Filter by taxa group
+ps.bac.mangrove <- subset_samples(ps.bac, hostTaxa == "Mangrove")
+ps.bac.mangrove <- prune_taxa(taxa_sums(ps.bac.mangrove) > 0, ps.bac.mangrove)
+psra.bac.mangrove <- transform_sample_counts(ps.bac.mangrove, function(otu){otu/sum(otu)})
+ps.bac.mangrove
+
+ps.fun.mangrove <- subset_samples(ps.fun, hostTaxa == "Mangrove")
+ps.fun.mangrove <- prune_taxa(taxa_sums(ps.fun.mangrove) > 0, ps.fun.mangrove)
+psra.fun.mangrove <- transform_sample_counts(ps.fun.mangrove, function(otu){otu/sum(otu)})
+ps.fun.mangrove
+
+ps.bac.mangrove.sub <- subset_samples(ps.bac.sub, hostTaxa == "Mangrove")
+ps.bac.mangrove.sub <- prune_taxa(taxa_sums(ps.bac.mangrove.sub) > 0, ps.bac.mangrove.sub)
+psra.bac.mangrove.sub <- transform_sample_counts(ps.bac.mangrove.sub, function(otu){otu/sum(otu)})
+ps.bac.mangrove.sub
+
+ps.fun.mangrove.sub <- subset_samples(ps.fun.sub, hostTaxa == "Mangrove")
+ps.fun.mangrove.sub <- prune_taxa(taxa_sums(ps.fun.mangrove.sub) > 0, ps.fun.mangrove.sub)
+psra.fun.mangrove.sub <- transform_sample_counts(ps.fun.mangrove.sub, function(otu){otu/sum(otu)})
+ps.fun.mangrove.sub
+
+## Filter by species
+ps.bac.aa <- subset_samples(ps.bac, host == "Avicinea alba")
+ps.bac.aa <- prune_taxa(taxa_sums(ps.bac.aa) > 0, ps.bac.aa)
+psra.bac.aa <- transform_sample_counts(ps.bac.aa, function(otu){otu/sum(otu)})
+ps.bac.aa
+
+ps.bac.sa <- subset_samples(ps.bac, host == "Sonneratia alba")
+ps.bac.sa <- prune_taxa(taxa_sums(ps.bac.sa) > 0, ps.bac.sa)
+psra.bac.sa <- transform_sample_counts(ps.bac.sa, function(otu){otu/sum(otu)})
+ps.bac.sa
+
+ps.fun.aa <- subset_samples(ps.fun, host == "Avicinea alba")
+ps.fun.aa <- prune_taxa(taxa_sums(ps.fun.aa) > 0, ps.fun.aa)
+psra.fun.aa <- transform_sample_counts(ps.fun.aa, function(otu){otu/sum(otu)})
+ps.fun.aa
+
+ps.fun.sa <- subset_samples(ps.fun, host == "Sonneratia alba")
+ps.fun.sa <- prune_taxa(taxa_sums(ps.fun.sa) > 0, ps.fun.sa)
+psra.fun.sa <- transform_sample_counts(ps.fun.sa, function(otu){otu/sum(otu)})
+ps.fun.sa
+
+ps.bac.aa.sub <- subset_samples(ps.bac.sub, host == "Avicinea alba")
+ps.bac.aa.sub <- prune_taxa(taxa_sums(ps.bac.aa.sub) > 0, ps.bac.aa.sub)
+psra.bac.aa.sub <- transform_sample_counts(ps.bac.aa.sub, function(otu){otu/sum(otu)})
+ps.bac.aa.sub
+
+ps.bac.sa.sub <- subset_samples(ps.bac.sub, host == "Sonneratia alba")
+ps.bac.sa.sub <- prune_taxa(taxa_sums(ps.bac.sa.sub) > 0, ps.bac.sa.sub)
+psra.bac.sa.sub <- transform_sample_counts(ps.bac.sa.sub, function(otu){otu/sum(otu)})
+ps.bac.sa.sub
+
+ps.fun.aa.sub <- subset_samples(ps.fun.sub, host == "Avicinea alba")
+ps.fun.aa.sub <- prune_taxa(taxa_sums(ps.fun.aa.sub) > 0, ps.fun.aa.sub)
+psra.fun.aa.sub <- transform_sample_counts(ps.fun.aa.sub, function(otu){otu/sum(otu)})
+ps.fun.aa.sub
+
+ps.fun.sa.sub <- subset_samples(ps.fun.sub, host == "Sonneratia alba")
+ps.fun.sa.sub <- prune_taxa(taxa_sums(ps.fun.sa.sub) > 0, ps.fun.sa.sub)
+psra.fun.sa.sub <- transform_sample_counts(ps.fun.sa.sub, function(otu){otu/sum(otu)})
+ps.fun.sa.sub
+
+# Filter by hostSection
+ps.bac.mangrove.fruit <- subset_samples(ps.bac.mangrove, hostSection == "Fruit")
+ps.bac.mangrove.fruit <- prune_taxa(taxa_sums(ps.bac.mangrove.fruit) > 0, ps.bac.mangrove.fruit)
+psra.bac.mangrove.fruit <- transform_sample_counts(ps.bac.mangrove.fruit, function(otu){otu/sum(otu)})
+ps.bac.mangrove.fruit
+
+ps.bac.mangrove.leaf <- subset_samples(ps.bac.mangrove, hostSection == "Leaf")
+ps.bac.mangrove.leaf <- prune_taxa(taxa_sums(ps.bac.mangrove.leaf) > 0, ps.bac.mangrove.leaf)
+psra.bac.mangrove.leaf <- transform_sample_counts(ps.bac.mangrove.leaf, function(otu){otu/sum(otu)})
+ps.bac.mangrove.leaf
+
+ps.bac.mangrove.pneumatophore <- subset_samples(ps.bac.mangrove, hostSection == "Pneumatophore")
+ps.bac.mangrove.pneumatophore <- prune_taxa(taxa_sums(ps.bac.mangrove.pneumatophore) > 0, ps.bac.mangrove.pneumatophore)
+psra.bac.mangrove.pneumatophore <- transform_sample_counts(ps.bac.mangrove.pneumatophore, function(otu){otu/sum(otu)})
+ps.bac.mangrove.pneumatophore
+
+ps.bac.mangrove.sediment <- subset_samples(ps.bac.mangrove, hostSection == "Sediment")
+ps.bac.mangrove.sediment <- prune_taxa(taxa_sums(ps.bac.mangrove.sediment) > 0, ps.bac.mangrove.sediment)
+psra.bac.mangrove.sediment <- transform_sample_counts(ps.bac.mangrove.sediment, function(otu){otu/sum(otu)})
+ps.bac.mangrove.sediment
+
+ps.bac.mangrove.nosediment <- subset_samples(ps.bac.mangrove, hostSection != "Sediment")
+ps.bac.mangrove.nosediment <- prune_taxa(taxa_sums(ps.bac.mangrove.nosediment) > 0, ps.bac.mangrove.nosediment)
+psra.bac.mangrove.nosediment <- transform_sample_counts(ps.bac.mangrove.nosediment, function(otu){otu/sum(otu)})
+ps.bac.mangrove.nosediment
+
+ps.fun.mangrove.fruit <- subset_samples(ps.fun.mangrove, hostSection == "Fruit")
+ps.fun.mangrove.fruit <- prune_taxa(taxa_sums(ps.fun.mangrove.fruit) > 0, ps.fun.mangrove.fruit)
+psra.fun.mangrove.fruit <- transform_sample_counts(ps.fun.mangrove.fruit, function(otu){otu/sum(otu)})
+ps.fun.mangrove.fruit
+
+ps.fun.mangrove.leaf <- subset_samples(ps.fun.mangrove, hostSection == "Leaf")
+ps.fun.mangrove.leaf <- prune_taxa(taxa_sums(ps.fun.mangrove.leaf) > 0, ps.fun.mangrove.leaf)
+psra.fun.mangrove.leaf <- transform_sample_counts(ps.fun.mangrove.leaf, function(otu){otu/sum(otu)})
+ps.fun.mangrove.leaf
+
+ps.fun.mangrove.pneumatophore <- subset_samples(ps.fun.mangrove, hostSection == "Pneumatophore")
+ps.fun.mangrove.pneumatophore <- prune_taxa(taxa_sums(ps.fun.mangrove.pneumatophore) > 0, ps.fun.mangrove.pneumatophore)
+psra.fun.mangrove.pneumatophore <- transform_sample_counts(ps.fun.mangrove.pneumatophore, function(otu){otu/sum(otu)})
+ps.fun.mangrove.pneumatophore
+
+ps.fun.mangrove.sediment <- subset_samples(ps.fun.mangrove, hostSection == "Sediment")
+ps.fun.mangrove.sediment <- prune_taxa(taxa_sums(ps.fun.mangrove.sediment) > 0, ps.fun.mangrove.sediment)
+psra.fun.mangrove.sediment <- transform_sample_counts(ps.fun.mangrove.sediment, function(otu){otu/sum(otu)})
+ps.fun.mangrove.sediment
+
+ps.fun.mangrove.nosediment <- subset_samples(ps.fun.mangrove, hostSection != "Sediment")
+ps.fun.mangrove.nosediment <- prune_taxa(taxa_sums(ps.fun.mangrove.nosediment) > 0, ps.fun.mangrove.nosediment)
+psra.fun.mangrove.nosediment <- transform_sample_counts(ps.fun.mangrove.nosediment, function(otu){otu/sum(otu)})
+ps.fun.mangrove.nosediment
+
+ps.bac.mangrove.fruit.sub <- subset_samples(ps.bac.mangrove.sub, hostSection == "Fruit")
+ps.bac.mangrove.fruit.sub <- prune_taxa(taxa_sums(ps.bac.mangrove.fruit.sub) > 0, ps.bac.mangrove.fruit.sub)
+psra.bac.mangrove.fruit.sub <- transform_sample_counts(ps.bac.mangrove.fruit.sub, function(otu){otu/sum(otu)})
+ps.bac.mangrove.fruit.sub
+
+ps.bac.mangrove.leaf.sub <- subset_samples(ps.bac.mangrove.sub, hostSection == "Leaf")
+ps.bac.mangrove.leaf.sub <- prune_taxa(taxa_sums(ps.bac.mangrove.leaf.sub) > 0, ps.bac.mangrove.leaf.sub)
+psra.bac.mangrove.leaf.sub <- transform_sample_counts(ps.bac.mangrove.leaf.sub, function(otu){otu/sum(otu)})
+ps.bac.mangrove.leaf.sub
+
+ps.bac.mangrove.pneumatophore.sub <- subset_samples(ps.bac.mangrove.sub, hostSection == "Pneumatophore")
+ps.bac.mangrove.pneumatophore.sub <- prune_taxa(taxa_sums(ps.bac.mangrove.pneumatophore.sub) > 0, ps.bac.mangrove.pneumatophore.sub)
+psra.bac.mangrove.pneumatophore.sub <- transform_sample_counts(ps.bac.mangrove.pneumatophore.sub, function(otu){otu/sum(otu)})
+ps.bac.mangrove.pneumatophore.sub
+
+ps.bac.mangrove.sediment.sub <- subset_samples(ps.bac.mangrove.sub, hostSection == "Sediment")
+ps.bac.mangrove.sediment.sub <- prune_taxa(taxa_sums(ps.bac.mangrove.sediment.sub) > 0, ps.bac.mangrove.sediment.sub)
+psra.bac.mangrove.sediment.sub <- transform_sample_counts(ps.bac.mangrove.sediment.sub, function(otu){otu/sum(otu)})
+ps.bac.mangrove.sediment.sub
+
+ps.bac.mangrove.nosediment.sub <- subset_samples(ps.bac.mangrove.sub, hostSection != "Sediment")
+ps.bac.mangrove.nosediment.sub <- prune_taxa(taxa_sums(ps.bac.mangrove.nosediment.sub) > 0, ps.bac.mangrove.nosediment.sub)
+psra.bac.mangrove.nosediment.sub <- transform_sample_counts(ps.bac.mangrove.nosediment.sub, function(otu){otu/sum(otu)})
+ps.bac.mangrove.nosediment.sub
+
+ps.fun.mangrove.fruit.sub <- subset_samples(ps.fun.mangrove.sub, hostSection == "Fruit")
+ps.fun.mangrove.fruit.sub <- prune_taxa(taxa_sums(ps.fun.mangrove.fruit.sub) > 0, ps.fun.mangrove.fruit.sub)
+psra.fun.mangrove.fruit.sub <- transform_sample_counts(ps.fun.mangrove.fruit.sub, function(otu){otu/sum(otu)})
+ps.fun.mangrove.fruit.sub
+
+ps.fun.mangrove.leaf.sub <- subset_samples(ps.fun.mangrove.sub, hostSection == "Leaf")
+ps.fun.mangrove.leaf.sub <- prune_taxa(taxa_sums(ps.fun.mangrove.leaf.sub) > 0, ps.fun.mangrove.leaf.sub)
+psra.fun.mangrove.leaf.sub <- transform_sample_counts(ps.fun.mangrove.leaf.sub, function(otu){otu/sum(otu)})
+ps.fun.mangrove.leaf.sub
+
+ps.fun.mangrove.pneumatophore.sub <- subset_samples(ps.fun.mangrove.sub, hostSection == "Pneumatophore")
+ps.fun.mangrove.pneumatophore.sub <- prune_taxa(taxa_sums(ps.fun.mangrove.pneumatophore.sub) > 0, ps.fun.mangrove.pneumatophore.sub)
+psra.fun.mangrove.pneumatophore.sub <- transform_sample_counts(ps.fun.mangrove.pneumatophore.sub, function(otu){otu/sum(otu)})
+ps.fun.mangrove.pneumatophore.sub
+
+ps.fun.mangrove.sediment.sub <- subset_samples(ps.fun.mangrove.sub, hostSection == "Sediment")
+ps.fun.mangrove.sediment.sub <- prune_taxa(taxa_sums(ps.fun.mangrove.sediment.sub) > 0, ps.fun.mangrove.sediment.sub)
+psra.fun.mangrove.sediment.sub <- transform_sample_counts(ps.fun.mangrove.sediment.sub, function(otu){otu/sum(otu)})
+ps.fun.mangrove.sediment.sub
+
+ps.fun.mangrove.nosediment.sub <- subset_samples(ps.fun.mangrove.sub, hostSection != "Sediment")
+ps.fun.mangrove.nosediment.sub <- prune_taxa(taxa_sums(ps.fun.mangrove.nosediment.sub) > 0, ps.fun.mangrove.nosediment.sub)
+psra.fun.mangrove.nosediment.sub <- transform_sample_counts(ps.fun.mangrove.nosediment.sub, function(otu){otu/sum(otu)})
+ps.fun.mangrove.nosediment.sub
+
+# Phyloseq objects
+ps.bac.sub
+ps.fun.sub
+
+ps.bac.mangrove.sub
+ps.fun.mangrove.sub
+
+ps.bac.aa.sub
+ps.bac.sa.sub
+
+# Filter objects [https://www.biorxiv.org/content/10.1101/2021.03.17.435717v1.full]
+
+# Tutorial [https://mibwurrepo.github.io/Microbial-bioinformatics-introductory-course-Material-2018/inference-of-microbial-ecological-networks.html]
+
+# Requirements: Read count >= 5, prevalence = 10%, no undefined Class
+
+library(metagMisc)
+library(microbiomeutilities)
+library(SpiecEasi)
+library(microViz)
+
+ps.bac.mangrove.sub <- prune_taxa(taxa_sums(ps.bac.mangrove.sub) > 5, ps.bac.mangrove.sub) # Read count
+ps.bac.mangrove.sub <- prune_taxa(taxa_sums(otu_table(ps.bac.mangrove.sub) > 0) / nrow(otu_table(ps.bac.mangrove.sub)) > 0.10, ps.bac.mangrove.sub) # Prevalence
+ps.bac.mangrove.sub <- subset_taxa(ps.bac.mangrove.sub, (Class != "NA")) # Class
+
+ps.fun.mangrove.sub <- prune_taxa(taxa_sums(ps.fun.mangrove.sub) > 5, ps.fun.mangrove.sub) # Read count
+ps.fun.mangrove.sub <- prune_taxa(taxa_sums(otu_table(ps.fun.mangrove.sub) > 0) / nrow(otu_table(ps.fun.mangrove.sub)) > 0.10, ps.fun.mangrove.sub) # Prevalence
+ps.fun.mangrove.sub <- subset_taxa(ps.fun.mangrove.sub, (Class != "NA")) # Class
+
+ps.bac.mangrove.sub.f <- format_to_besthit(ps.bac.mangrove.sub)
+ps.fun.mangrove.sub.f <- format_to_besthit(ps.fun.mangrove.sub)
+
+otu.bac.mangrove.c <- as.matrix(otu_table(ps.bac.mangrove.sub))
+otu.fun.mangrove.c <- as.matrix(otu_table(ps.fun.mangrove.sub))
+
+tax.bac.mangrove.c <- as.data.frame(tax_table(ps.bac.mangrove.sub.f))
+tax.fun.mangrove.c <- as.data.frame(tax_table(ps.fun.mangrove.sub.f))
+
+# By species
+
+ps.bac.aa.sub <- prune_taxa(taxa_sums(ps.bac.aa.sub) > 5, ps.bac.aa.sub) # Read count
+ps.bac.aa.sub <- prune_taxa(taxa_sums(otu_table(ps.bac.aa.sub) > 0) / nrow(otu_table(ps.bac.aa.sub)) > 0.10, ps.bac.aa.sub) # Prevalence
+ps.bac.aa.sub <- subset_taxa(ps.bac.aa.sub, (Class != "NA")) # Class
+
+ps.fun.aa.sub <- prune_taxa(taxa_sums(ps.fun.aa.sub) > 5, ps.fun.aa.sub) # Read count
+ps.fun.aa.sub <- prune_taxa(taxa_sums(otu_table(ps.fun.aa.sub) > 0) / nrow(otu_table(ps.fun.aa.sub)) > 0.10, ps.fun.aa.sub) # Prevalence
+ps.fun.aa.sub <- subset_taxa(ps.fun.aa.sub, (Class != "NA")) # Class
+
+ps.bac.aa.sub.f <- format_to_besthit(ps.bac.aa.sub)
+ps.fun.aa.sub.f <- format_to_besthit(ps.fun.aa.sub)
+
+otu.bac.aa.c <- as.matrix(otu_table(ps.bac.aa.sub))
+otu.fun.aa.c <- as.matrix(otu_table(ps.fun.aa.sub))
+
+tax.bac.aa.c <- as.data.frame(tax_table(ps.bac.aa.sub.f))
+tax.fun.aa.c <- as.data.frame(tax_table(ps.fun.aa.sub.f))
+
+ps.bac.sa.sub <- prune_taxa(taxa_sums(ps.bac.sa.sub) > 5, ps.bac.sa.sub) # Read count
+ps.bac.sa.sub <- prune_taxa(taxa_sums(otu_table(ps.bac.sa.sub) > 0) / nrow(otu_table(ps.bac.sa.sub)) > 0.10, ps.bac.sa.sub) # Prevalence
+ps.bac.sa.sub <- subset_taxa(ps.bac.sa.sub, (Class != "NA")) # Class
+
+ps.fun.sa.sub <- prune_taxa(taxa_sums(ps.fun.sa.sub) > 5, ps.fun.sa.sub) # Read count
+ps.fun.sa.sub <- prune_taxa(taxa_sums(otu_table(ps.fun.sa.sub) > 0) / nrow(otu_table(ps.fun.sa.sub)) > 0.10, ps.fun.sa.sub) # Prevalence
+ps.fun.sa.sub <- subset_taxa(ps.fun.sa.sub, (Class != "NA")) # Class
+
+ps.bac.sa.sub.f <- format_to_besthit(ps.bac.sa.sub)
+ps.fun.sa.sub.f <- format_to_besthit(ps.fun.sa.sub)
+
+otu.bac.sa.c <- as.matrix(otu_table(ps.bac.sa.sub))
+otu.fun.sa.c <- as.matrix(otu_table(ps.fun.sa.sub))
+
+tax.bac.sa.c <- as.data.frame(tax_table(ps.bac.sa.sub.f))
+tax.fun.sa.c <- as.data.frame(tax_table(ps.fun.sa.sub.f))
+
+# Combined mangrove taxa
+taxa.mangrove <- data.frame(rbind(
+  tax_table(ps.bac.mangrove.sub.f), tax_table(ps.bac.aa.sub.f), tax_table(ps.bac.sa.sub.f),
+  tax_table(ps.fun.mangrove.sub.f), tax_table(ps.fun.aa.sub.f), tax_table(ps.fun.sa.sub.f)
+  ))
+taxa.mangrove <- unique(taxa.mangrove$Class)
+
+```
+
+```{r}
+# Sort sample order for SpiecEasi
+## Choose phyloseq objects [CHANGE]
+bacterial_phyloseq <- ps.bac.mangrove.sub
+fungal_phyloseq <- ps.fun.mangrove.sub
+
+# Formatting of data
+
+ps.bac.sub.f <- format_to_besthit(bacterial_phyloseq)
+ps.fun.sub.f <- format_to_besthit(fungal_phyloseq)
+
+otu.bac.c <- as.matrix(otu_table(bacterial_phyloseq))
+otu.fun.c <- as.matrix(otu_table(fungal_phyloseq))
+
+tax.bac.c <- as.data.frame(tax_table(ps.bac.sub.f))
+tax.fun.c <- as.data.frame(tax_table(ps.fun.sub.f))
+
+# Run SpiecEasi
+
+se.both <- spiec.easi(list(otu.bac.c, otu.fun.c), method = 'mb', nlambda=40,
+                      lambda.min.ratio = 1e-2, pulsar.params = list(thresh = 0.05))
+se.opt <- adj2igraph(getRefit(se.both), vertex.attr = list(name = c(colnames(otu.bac.c), colnames(otu.fun.c))))
+```
+
+```{r}
+# Weights
+library(Matrix)
+sebeta <- symBeta(getOptBeta(se.both), mode='maxabs')
+elist.mb <- summary(sebeta)
+
+hist(elist.mb[,3], main='', xlab='edge weights')
+weights <- elist.mb[,3]
+```
+
+```{r}
+# Plotting network
+
+library(igraph)
+
+se.opt.ig <- se.opt
+
+se.opt.ig.co.fdr <- layout_with_fr(se.opt.ig)
+
+E(se.opt.ig)[weights > 0]$color<-"orange"
+E(se.opt.ig)[weights < 0]$color<-"steelblue"
+
+plot(se.opt.ig, layout=se.opt.ig.co.fdr, 
+     vertex.size = 2, vertex.label.cex = 0.5)
+
+library(GGally)
+library(intergraph)
+library(dplyr)
+library(magrittr)
+library(network)
+
+se.both.network <- asNetwork(se.opt.ig)
+
+network::set.edge.attribute(se.both.network, 
+                            "color",
+                            ifelse(weights > 0, 
+                                   scales::alpha("orange", alpha = 0.75), scales::alpha("steelblue", alpha = 0.75)))
+network::set.edge.attribute(se.both.network, 
+                            "weight",
+                            weights)
+network::set.edge.attribute(se.both.network, 
+                            "weightSize",
+                            abs(weights))
+
+# Taxonomy information
+
+tax.both <- c(tax.bac.c$Class, tax.fun.c$Class)
+kingdom.both <- c(rep("Bacteria", length(tax.bac.c$Class)), rep("Fungi", length(tax.fun.c$Class)))
+
+se.both.network %v% "Taxonomy" <- tax.both
+se.both.network %v% "Kingdom" <- kingdom.both
+se.both.network %v% "Edge Weight" <- weights
+
+ggnet2(se.both.network, node.color = "Taxonomy", 
+       label = TRUE, label.size = 2, edge.color = "color") + 
+  guides(color=guide_legend(title="Taxonomy", nrow = 40), size = "none") +
+  theme(legend.text=element_text(size=rel(0.5)), legend.title=element_text(size=rel(1)), legend.key.size= unit(0.3, "line"))
+
+se.both.mb <- degree.distribution(se.opt.ig)
+plot(0:(length(se.both.mb)-1), se.both.mb, ylim=c(0,.35), type='b', 
+     ylab="Frequency", xlab="Degree", main="Degree Distributions")
+
+all_degrees <- data.frame(Degree = degree(se.opt.ig), Kingdom = kingdom.both)
+
+# Network plot
+
+#colours <- scale_color_manual(values=c("#fcff5d", "#7dfc00", "#0ec434", 
+#                                       "#228c68", "#8ad8e8", "#235b54", 
+#                                       "#29bdab", "#3998f5", "#37294f", 
+#                                       "#277da7", "#3750db", "#f22020", 
+#                                       "#991919", "#ffcba5", "#e68f66", 
+#                                       "#c56133", "#96341c", "#632819", 
+#                                       "#ffc413", "#f47a22", "#2f2aa0", 
+#                                       "#b732cc", "#772b9d", "#f07cab", 
+#                                       "#d30b94", "#000000", "#c3a5b4", 
+#                                       "#946aa2", "#5d4c86"))
+#library(Polychrome)
+#Glasbey = glasbey.colors(length(tax.both))
+#swatch(Glasbey)
+COLOR_CLASS <- COLOR_74[1:length(taxa.mangrove)]
+names(COLOR_CLASS) <- taxa.mangrove
+COLOR_KINGDOM <- COLOR_10[c(5,1)]
+names(COLOR_KINGDOM) <- c("Bacteria", "Fungi")
+
+colours <- scale_color_manual(values = COLOR_CLASS)
+
+ggplot(all_degrees, aes(x = Degree, color = Kingdom, fill = Kingdom)) +
+  geom_histogram(aes(y = ..density..), position = "identity", alpha = 0.5, binwidth = 1) +
+  geom_density(alpha = 0.6) +
+  theme(legend.position="top") + 
+  scale_color_manual(values = COLOR_KINGDOM) +
+  scale_fill_manual(values = COLOR_KINGDOM)+
+labs(
+  title = "Degree histogram plot",
+  x = "Node Degree", 
+  y = "Density"
+  )
+  
+
+network.plot.clean <- ggnet2(se.both.network, node.color = "Taxonomy", 
+                           node.shape = "Kingdom",
+                           label = FALSE, 
+                           legend.size = 12,
+                           label.size = 2, edge.color = "color",
+                           size = "degree", 
+                           size.min = 0,
+                           size.legend = TRUE) + 
+  guides(color = guide_legend(title="Taxonomy", nrow = 30), size = FALSE) + 
+  colours +
+  scale_shape_manual(values=c(19, 17)) + scale_alpha_manual(values=c(0.5)) +
+  labs(
+    shape = "Kingdom"
+  )
+  #theme(legend.text=element_text(size=rel(0.5)), legend.title=element_text(size=rel(1)), legend.key.size= unit(0.3, "line"))
+
+network.plot <- ggnet2(se.both.network, node.color = "Taxonomy", 
+                       node.shape = "Kingdom",
+                       label = TRUE, 
+                       legend.size = 12,
+                       label.size = 2, 
+                       edge.color = "color", edge.size = "weightSize",
+                       node.size = "degree", node.alpha = "degree",
+                       size.min = 0,
+                       size.legend = TRUE) + 
+  guides(color=guide_legend(title="Taxonomy", nrow = 30), size = FALSE) + 
+  colours +
+  scale_shape_manual(values=c(19, 17)) + scale_alpha_manual(values=c(0.5)) +
+  labs(
+    shape = "Kingdom"
+  )
+#  theme(legend.text=element_text(size=rel(0.5)), legend.title=element_text(size=rel(1)), legend.key.size= unit(0.3, "line"))
+
+# Export the adjacent nodes as a dataframe
+
+nodes.spiec.easy <- as_data_frame(se.opt.ig, what = c("edges", "vertices", "both"))
+#write.csv(nodes.spiec.easy, file='~/spiec-easy-data-frame.csv')
+```
+
+```{r}
+network.plot
+network.plot.clean
+```
+
+```{r}
+network.plot.clean <- ggnet2(se.both.network, node.color = "Taxonomy", 
+                           node.shape = "Kingdom",
+                           label = FALSE, 
+                           legend.size = 12,
+                           label.size = 2, edge.color = "color",
+                           size = "degree", 
+                           size.min = 0,
+                           size.legend = TRUE) + 
+  guides(color = guide_legend(title="Taxonomy", nrow = 30), size = FALSE) + 
+  colours +
+  scale_shape_manual(values=c(19, 17)) + scale_alpha_manual(values=c(0.5)) +
+  labs(
+    shape = "Kingdom"
+  )
+  #theme(legend.text=element_text(size=rel(0.5)), legend.title=element_text(size=rel(1)), legend.key.size= unit(0.3, "line"))
+network.plot.clean
+
+network.plot.clean <- ggnet2(se.both.network, node.color = "Kingdom", 
+                           #node.shape = "Kingdom",
+                           label = FALSE, 
+                           legend.size = 12,
+                           label.size = 2, edge.color = "color",
+                           size = "degree", 
+                           size.min = 0,
+                           size.legend = TRUE) + 
+  guides(color = guide_legend(title="Kingdom", nrow = 2), size = FALSE) + 
+#  scale_color_manual(values = COLOR_KINGDOM) +
+  scale_alpha_manual(values = c(0.5)) +
+network.plot.clean
+```
+
+```{r}
+se.opt
+plot(se.opt, edge.arrow.size=.2, vertex.label = NA, vertex.size=8)
+
+```
+
+```{r}
+ASV_degrees <- data.frame(ASVID = names(degree(se.opt.ig)), Degree = degree(se.opt.ig), Taxonomy = tax.both, Kingdom = kingdom.both)
+View(ASV_degrees)
+```
+
+```{r}
+net <- se.opt
+
+# Hub detection
+net.cn <- closeness(net)
+net.bn <- betweenness(net)
+net.pr <- page_rank(net)$vector
+net.hs <- hub_score(net)$vector
+# Sort the species based on hubbiness score
+net.hs.sort <- sort(net.hs, decreasing = TRUE)
+# Choose the top 5 keystone species
+net.hs.top5 <- head(net.hs.sort, n = 5)
+
+# Get clusters
+wt <- cluster_walktrap(se.opt)
+ml <- cluster_louvain(se.opt)
+# Get membership of walktrap clusters
+membership(wt)
+# Get clusters using MCL method
+adj <- as_adjacency_matrix(net)
+mc <- mcl(adj, addLoops = TRUE)
+# Compare clusters detected by different methods
+compare(membership(wt), membership(ml))
+compare(membership(wt), mc$Cluster)
+# Create customized membership for comparison
+expected.cls <- sample(1:5, vcount(net), replace = T) %>% as_membership
+compare(expected.cls, membership(wt))
+# Plot clusters as dendrogram
+plot_dendrogram(wt)
+# Calculate modularity
+modularity(net, membership(wt))
+```
+

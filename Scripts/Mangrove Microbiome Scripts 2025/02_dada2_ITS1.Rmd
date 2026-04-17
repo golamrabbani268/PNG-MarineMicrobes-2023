@@ -1,5 +1,8 @@
 ---
-title: "R Notebook"
+title: "DADA2 ITS1 Pipeline"
+author: "Golam Rabbani"
+date: "`r Sys.Date()`"
+output: html_document
 ---
 
 # Script for dada2 processing
@@ -14,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## funtionNames
 ## ClassNames
 
-setwd("./Working Files/")
+# setwd("./Working Files/")
 knitr::opts_knit$set(root.dir = normalizePath("./Working Files/")) 
 ```
 
@@ -49,6 +52,7 @@ ggsave("./Outputs/Quality plot F - SA-ITS1.png", width = 6, height = 4)
 plotQualityProfile(fnRs[11:12])
 ggsave("./Outputs/Quality plot R - SA-ITS1.png", width = 6, height = 4)
 ```
+We trim at 240, 240.
 
 ## Filtering and Trimming
 ```{r}
@@ -58,19 +62,28 @@ filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
 
+truncLenR1 <- 240
+truncLenR2 <- 240
 maxEER1 <- 2 # Default 2
 maxEER2 <- 2 # Default 2
 
-out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, 
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(truncLenR1,truncLenR2),
                      maxN=0, maxEE=c(maxEER1,maxEER2), truncQ=2, rm.phix=TRUE,
                      compress=TRUE, multithread=TRUE) # On Windows set multithread=FALSE
 head(out)
+
+emptySamples <- sample.names[out[,2] == 0]
+for(emptySample in emptySamples){
+  file.create(filtFs[[emptySample]])
+  file.create(filtRs[[emptySample]])
+}
+
 ```
 
 ## Learn the Error Rates
 ```{r}
-errF <- learnErrors(filtFs, multithread=TRUE) 
-errR <- learnErrors(filtRs, multithread=TRUE) 
+errF <- learnErrors(filtFs[!(sample.names %in% emptySamples)], multithread=TRUE) 
+errR <- learnErrors(filtRs[!(sample.names %in% emptySamples)], multithread=TRUE) 
 plotErrors(errF, nominalQ=FALSE)
 ggsave("./Outputs/ErrF plot - SA-ITS1.png", width = 6, height = 4)
 plotErrors(errR, nominalQ=FALSE)
@@ -87,20 +100,27 @@ names(dadaFs) <- sample.names
 names(dadaRs) <- sample.names
 names(mergers) <- sample.names
 for (sam in sample.names){
-  cat("Processing:", sam, "\n")
-  derepF <- derepFastq(filtFs[[sam]], verbose = TRUE)
-  derepR <- derepFastq(filtRs[[sam]], verbose = TRUE)
-  dadaFs[[sam]] <- dada(derepF, err=errF, multithread = TRUE)
-  dadaRs[[sam]] <- dada(derepR, err=errR, multithread = TRUE)
-  mergers[[sam]] <- mergePairs(dadaFs[[sam]], derepF, dadaRs[[sam]], derepR, verbose = TRUE)
+  if(sam %in% emptySamples){
+    cat("Sample", sam, "is empty. Not processing.")
+    dadaFs[[sam]] <- NA
+    dadaRs[[sam]] <- NA
+    mergers[[sam]] <- NA
+  }else{
+    cat("Processing:", sam, "\n")
+    derepF <- derepFastq(filtFs[[sam]], verbose = TRUE)
+    derepR <- derepFastq(filtRs[[sam]], verbose = TRUE)
+    dadaFs[[sam]] <- dada(derepF, err=errF, multithread = TRUE)
+    dadaRs[[sam]] <- dada(derepR, err=errR, multithread = TRUE)
+    mergers[[sam]] <- mergePairs(dadaFs[[sam]], derepF, dadaRs[[sam]], derepR, verbose = TRUE)
+  }
 }
-head(mergers[[1]])
+head(mergers[[10]])
 ```
 
 ## Construct sequence table
 ```{r}
-seqtab <- makeSequenceTable(mergers)
-dim(seqtab) # 368 24360
+seqtab <- makeSequenceTable(mergers[!(sample.names %in% emptySamples)])
+dim(seqtab) # 367 24989
 saveRDS(seqtab, "./Outputs/seqtabs/seqtab_raw_SA-ITS1.RDS")
 
 ## Inspect distribution of sequence lengths
@@ -119,7 +139,7 @@ sum(seqtab.nochim)/sum(seqtab)
 ## Track reads through pipeline
 ```{r}
 getN <- function(x) sum(getUniques(x))
-track <- cbind(out, sapply(dadaFs, getN), sapply(dadaRs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
+track <- cbind(out, sapply(dadaFs[!(sample.names %in% emptySamples)], getN), sapply(dadaRs[!(sample.names %in% emptySamples)], getN), sapply(mergers[!(sample.names %in% emptySamples)], getN), rowSums(seqtab.nochim))
 # If processing a single sample, remove the sapply calls: e.g. replace sapply(dadaFs, getN) with getN(dadaFs)
 colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "nonchim")
 rownames(track) <- sample.names
@@ -140,7 +160,7 @@ rm(seqtab)
 ```
 ```{r}
 # Resume Point
-seqtab.nochim <- readRDS("./Outputs/Mangrove_ITS1/seqtabs/seqtab_nochim_SA-ITS1.RDS")
+seqtab.nochim <- readRDS("./Outputs/seqtabs/seqtab_nochim_SA-ITS1.RDS")
 ```
 
 ## Import metadata
@@ -285,10 +305,12 @@ filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
 
+truncLenR1 <- 240
+truncLenR2 <- 240
 maxEER1 <- 2 # Default 2
 maxEER2 <- 2 # Default 2
 
-out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, 
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(truncLenR1,truncLenR2),
                      maxN=0, maxEE=c(maxEER1,maxEER2), truncQ=2, rm.phix=TRUE,
                      compress=TRUE, multithread=TRUE) # On Windows set multithread=FALSE
 head(out)
@@ -327,7 +349,7 @@ head(mergers[[1]])
 ## Construct sequence table
 ```{r}
 seqtab <- makeSequenceTable(mergers)
-dim(seqtab) #
+dim(seqtab) # 288 16867
 saveRDS(seqtab, "./Outputs/seqtabs/seqtab_raw_AA-ITS1.RDS")
 
 ## Inspect distribution of sequence lengths
@@ -368,7 +390,7 @@ rm(seqtab)
 
 ```{r}
 # Resume Point
-seqtab.nochim <- readRDS("./Outputs/Mangrove_ITS1/seqtabs/seqtab_nochim_AA-ITS1.RDS")
+seqtab.nochim <- readRDS("./Outputs/seqtabs/seqtab_nochim_AA-ITS1.RDS")
 ```
 
 ## Import metadata
@@ -513,10 +535,12 @@ filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
 
+truncLenR1 <- 240
+truncLenR2 <- 240
 maxEER1 <- 2 # Default 2
 maxEER2 <- 2 # Default 2
 
-out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, 
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(truncLenR1,truncLenR2),
                      maxN=0, maxEE=c(maxEER1,maxEER2), truncQ=2, rm.phix=TRUE,
                      compress=TRUE, multithread=TRUE) # On Windows set multithread=FALSE
 head(out)
@@ -555,7 +579,7 @@ head(mergers[[1]])
 ## Construct sequence table
 ```{r}
 seqtab <- makeSequenceTable(mergers)
-dim(seqtab) # 
+dim(seqtab) # 368 17416   
 saveRDS(seqtab, "./Outputs/seqtabs/seqtab_raw_EA-ITS1.RDS")
 
 ## Inspect distribution of sequence lengths
@@ -596,7 +620,7 @@ rm(seqtab)
 
 ```{r}
 # Resume Point
-seqtab.nochim <- readRDS("./Outputs/Seagrass_ITS/seqtabs/seqtab_nochim_EA-ITS1.RDS")
+seqtab.nochim <- readRDS("./Outputs/seqtabs/seqtab_nochim_EA-ITS1.RDS")
 ```
 
 ## Import metadata
@@ -738,10 +762,12 @@ filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
 
+truncLenR1 <- 240
+truncLenR2 <- 240
 maxEER1 <- 2 # Default 2
 maxEER2 <- 2 # Default 2
 
-out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, 
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(truncLenR1,truncLenR2),
                      maxN=0, maxEE=c(maxEER1,maxEER2), truncQ=2, rm.phix=TRUE,
                      compress=TRUE, multithread=TRUE) # On Windows set multithread=FALSE
 head(out)
@@ -780,7 +806,7 @@ head(mergers[[1]])
 ## Construct sequence table
 ```{r}
 seqtab <- makeSequenceTable(mergers)
-dim(seqtab) # 
+dim(seqtab) # 568 21492
 saveRDS(seqtab, "./Outputs/seqtabs/seqtab_raw_TH-ITS1.RDS")
 
 ## Inspect distribution of sequence lengths
@@ -821,7 +847,7 @@ rm(seqtab)
 
 ```{r}
 # Resume Point
-seqtab.nochim <- readRDS("./Outputs/Seagrass_ITS/seqtabs/seqtab_nochim_TH-ITS1.RDS")
+seqtab.nochim <- readRDS("./Outputs/seqtabs/seqtab_nochim_TH-ITS1.RDS")
 ```
 
 ## Import metadata
