@@ -56,7 +56,7 @@ plotQualityProfile(fnRs[11:12])
 ggsave("./Outputs/Quality plot R.png", width = 6, height = 4)
 ```
 
-We trim at 250, 150 for 16S sequences but no trimming for ITS1 samples.
+We trim at 250, 150 for 16S sequences but 240, 240 for ITS1 samples.
 
 ```{r}
 # Filtering and trimming sequences ---------------------------------------------
