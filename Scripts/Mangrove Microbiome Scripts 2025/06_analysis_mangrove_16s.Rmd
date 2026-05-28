@@ -142,6 +142,11 @@ otu.mangrove <- as.data.frame(ps.png.bac.mangrove@otu_table)
 meta.mangrove <- as.data.frame(ps.png.bac.mangrove@sam_data)
 ```
 
+```{r}
+refseq_df <- data.frame(refseq(ps.png.bac.mangrove))
+write.csv(refseq_df, file = "./Outputs/referenceSequence-mangrove-16s.csv")
+```
+
 # Rarefaction Curves
 ```{r}
 ## Functions
@@ -482,6 +487,58 @@ phylum_summary %>%
   arrange(desc(RelativeAbundance))
 ```
 
+### Get mean abundance by samples for each phylum
+```{r}
+library(microViz)
+
+# Overall
+psra.phylum <- tax_agg(tax_fix(psra.png.bac.mangrove), rank = "Phylum")
+otu.phylum <- data.frame(otu_table(psra.phylum))
+summary(otu.phylum)
+sd(otu.phylum[,"Pseudomonadota"])
+sd(otu.phylum[,"Bacteroidota"])
+sd(otu.phylum[,"Actinobacteriota"])
+sd(otu.phylum[,"Chloroflexi"])
+ 
+
+# Fruit
+psra.phylum <- tax_agg(tax_fix(psra.png.bac.mangrove.fruit), rank = "Phylum")
+otu.phylum <- data.frame(otu_table(psra.phylum))
+summary(otu.phylum)
+sd(otu.phylum[,"Pseudomonadota"])
+sd(otu.phylum[,"Bacteroidota"])
+sd(otu.phylum[,"Actinobacteriota"])
+sd(otu.phylum[,"Chloroflexi"])
+
+# Leaf
+psra.phylum <- tax_agg(tax_fix(psra.png.bac.mangrove.leaf), rank = "Phylum")
+otu.phylum <- data.frame(otu_table(psra.phylum))
+summary(otu.phylum)
+sd(otu.phylum[,"Pseudomonadota"])
+sd(otu.phylum[,"Bacteroidota"])
+sd(otu.phylum[,"Actinobacteriota"])
+sd(otu.phylum[,"Chloroflexi"])
+
+# Pneumatophore
+psra.phylum <- tax_agg(tax_fix(psra.png.bac.mangrove.pneumatophore), rank = "Phylum")
+otu.phylum <- data.frame(otu_table(psra.phylum))
+summary(otu.phylum)
+sd(otu.phylum[,"Pseudomonadota"])
+sd(otu.phylum[,"Bacteroidota"])
+sd(otu.phylum[,"Actinobacteriota"])
+sd(otu.phylum[,"Chloroflexi"])
+
+# Sediment
+psra.phylum <- tax_agg(tax_fix(psra.png.bac.mangrove.sediment), rank = "Phylum")
+otu.phylum <- data.frame(otu_table(psra.phylum))
+summary(otu.phylum)
+sd(otu.phylum[,"Pseudomonadota"])
+sd(otu.phylum[,"Bacteroidota"])
+sd(otu.phylum[,"Actinobacteriota"])
+sd(otu.phylum[,"Chloroflexi"])
+
+```
+
 ## Class
 ```{r}
 ### Mangrove
@@ -664,77 +721,6 @@ diversity %>% group_by(hostTaxa) %>%
 ## By hostSection
 diversity %>% group_by(hostSection) %>%
   summarise(N = n(), Min = min(shannon), Max = max(shannon), Mean = mean(shannon), Median = median(shannon), SD = sd(shannon), )
-```
-
-```{r}
-## Boxplots
-ggplot(diversity, aes(x = site, y = shannon, fill = host)) + 
-  geom_boxplot() + 
-  theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
-  labs(
-    x = "Site",
-    y = "Shannon Diversity",
-    fill = "Host"
-    ) +
-  scale_fill_manual(values = COLOR_HOST)
-ggsave(filename = "./Outputs/shannonDiversity-filled-site-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
-
-ggplot(diversity, aes(x=site, y=shannon, fill = host)) + 
-  geom_violin(draw_quantiles = c(0.25, 0.50, 0.75)) + 
-  theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
-  labs(
-    x = "Site",
-    y = "Shannon Diversity",
-    fill = "Host"
-  ) +
-  scale_fill_manual(values = COLOR_HOST)
-
-ggplot(diversity, aes(x = host, y = shannon, fill = site)) + 
-  geom_boxplot() + theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
-  labs(
-    x = "Host",
-    y = "Shannon Diversity",
-    fill = "Site"
-  ) +
-  scale_fill_manual(values = COLOR_SITE)
-ggsave(filename = "./Outputs/shannonDiversity-filled-host-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
-
-ggplot(diversity, aes(x = host, y = shannon, fill = hostTaxa)) + 
-  geom_boxplot() + theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
-  labs(
-    x = "Host",
-    y = "Shannon Diversity",
-    fill = "Host Taxa"
-  ) +
-  scale_fill_manual(values = COLOR_HOST_TAXA)
-ggsave(filename = "./Outputs/shannonDiversity-filled-hostTaxa-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
-
-ggplot(diversity, aes(x = host, y = shannon, fill = hostSection)) + 
-  geom_boxplot() + theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
-  labs(
-    x = "Host",
-    y = "Shannon Diversity",
-    fill = "Host Section"
-  ) +
-  scale_fill_manual(values = COLOR_HOST_SECTION)
-ggsave(filename = "./Outputs/shannonDiversity-filled-host-hostSection-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
-
-ggplot(diversity, aes(x = site, y = shannon, fill = hostSection)) + 
-  geom_boxplot() + theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), axis.text = element_text(size = 25), axis.title.y = element_text(vjust = 2), axis.title = element_text(size = 30), title = element_text(size = 17), legend.text = element_text(size = 25), legend.title = element_text(size = 30)) + 
-  labs(
-    x = "Site",
-    y = "Shannon Diversity",
-    fill = "Host Section"
-  ) +
-  scale_fill_manual(values = COLOR_HOST_SECTION) +
-  facet_wrap(vars(host))
-ggsave(filename = "./Outputs/shannonDiversity-filled-site-hostSection-mangrove-PNG-16s.svg", dpi = 300, width = 12, height = 10)
 ```
 
 ```{r}
@@ -1019,285 +1005,6 @@ htmap <-
 htmap %>% ComplexHeatmap::draw(
   annotation_legend_list = attr(htmap, "AnnoLegends")
 )
-```
-
-
-## Previous Method
-
-```{r}
-melted_ps.bac.mangrove <- psmelt(psra.png.bac.mangrove)
-```
-
-### By Phylum
-```{r}
-factor_melted_ps.bac.mangrove_by_siteHostSpecies <- unique(melted_ps.bac.mangrove[,c("site", "host", "hostSection")])
-dataframe <- data.frame()  #creating dataframe to fill in information
-melted_ps.bac.mangrove_aggregate <- aggregate(
-  Abundance ~ OTU * site * host * hostSection,
-  data = melted_ps.bac.mangrove,
-  mean
-)
-tax.bac.mangrove_table <- as.data.frame(ps.png.bac.mangrove@tax_table)
-tax.bac.mangrove_table$OTU <- row.names(tax.bac.mangrove_table)
-melted_ps.bac.mangrove_aggregate <- left_join(melted_ps.bac.mangrove_aggregate,
-                                     tax.bac.mangrove_table,
-                                     by = "OTU")
-
-for (i in 1:nrow(factor_melted_ps.bac.mangrove_by_siteHostSpecies)) {                                    #For each combination,
-  sub_ps.bac.mangrove <- melted_ps.bac.mangrove_aggregate[melted_ps.bac.mangrove_aggregate$site == factor_melted_ps.bac.mangrove_by_siteHostSpecies[i,1] &
-                                                          melted_ps.bac.mangrove_aggregate$host == factor_melted_ps.bac.mangrove_by_siteHostSpecies[i,2] &
-                                                          melted_ps.bac.mangrove_aggregate$hostSection == factor_melted_ps.bac.mangrove_by_siteHostSpecies[i,3],] #subset dataframe.
-  
-  per_rank_abundance <- aggregate(Abundance ~ Phylum, data = sub_ps.bac.mangrove, sum)  #Aggregate abundance based on each rank
-  
-  per_rank_abundance$site <- sub_ps.bac.mangrove$site[1:nrow(per_rank_abundance)] #Adding sample name to each rank row
-  per_rank_abundance$host <- sub_ps.bac.mangrove$host[1:nrow(per_rank_abundance)] 
-  per_rank_abundance$hostSection <- sub_ps.bac.mangrove$hostSection[1:nrow(per_rank_abundance)]
-  
-  dataframe <- rbind(dataframe, per_rank_abundance)                       #store this in a dataframe for each row
-}
-
-#Sorting dataframe in order of hostTaxa, site, host, hostSection
-ordered_df.mangrove <- dataframe[order(dataframe$site, dataframe$host, dataframe$hostSection),]
-ordered_df.mangrove <- ordered_df.mangrove %>% 
-  mutate(
-    siteTag = case_when(
-      site=="Kavieng" ~ "Kav", 
-      site=="Kimbe Bay" ~ "Kim", 
-      site=="Madang" ~ "Mad", 
-      site=="Milne Bay" ~ "Mil", 
-      site=="Port Moresby" ~ "Mot", 
-      site=="Rabaul" ~ "Rab"
-    ),
-    hostTag = case_when(
-      host=="Avicinea alba" ~ "Aa", 
-      host=="Sonneratia alba" ~ "Sa"
-    ),
-    hostSectionTag = case_when(
-      hostSection=="Fruit" ~ "Fru", 
-      hostSection=="Leaf" ~ "Lea", 
-      hostSection=="Pneumatophore" ~ "Pne", 
-      hostSection=="Sediment" ~ "Sed"
-    )
-  )
-ordered_df.mangrove$sortUID <- paste0(ordered_df.mangrove$hostSectionTag, ordered_df.mangrove$hostTag, ordered_df.mangrove$siteTag)
-```
-
-```{r}
-table(ordered_df.mangrove$host) / length(unique(ordered_df.mangrove$Phylum))
-heatplot <- ggplot(ordered_df.mangrove, aes(reorder(sortUID, sortUID), reorder(Phylum, Phylum))) +
-  geom_tile(aes(fill = Abundance)) + 
-  labs(y = "Phylum", x = "") + 
-  scale_x_discrete(expand = c(0,0)) + 
-  scale_y_discrete(expand = c(0,0)) +
-  theme(axis.title = element_text(size = 20), axis.text.y = element_text(size = 13), 
-        axis.text.x = element_blank(),#element_text(angle = 90), 
-        axis.ticks.x = element_blank(),
-        legend.text = element_text(size = 13), legend.title = element_text(size = 15),
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + 
-  scale_fill_gradient2(
-        #colors = c("white", "#132B43"),
-        low = "white",
-        mid = "#a6bddb",
-        high = "#2b8cbe",#"#c62828","#132B43""#56B1F7""#1565c0""#ece7f2"
-        midpoint = mean(ordered_df$Abundance),
-        transform = "log",
-        na.value = "white",
-        breaks = 10^(-2*(5:0)),
-        limits = c(sort(unique(ordered_df$Abundance))[2],1)
-        )
-  
-y.min <- -0.5
-y.max <- 0.5
-y.mid <- y.min + (y.max - y.min) / 2
-heatplot <- heatplot +
-  
-  # Host Taxa 1: Mangrove
-  annotate("rect", xmin = 0.5, xmax = 9.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Fruit"]) +
-  annotate("rect", xmin = 9.5, xmax = 18.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Leaf"]) +
-  annotate("rect", xmin = 18.5, xmax = 27.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Pneumatophore"]) +
-  annotate("rect", xmin = 27.5, xmax = 36.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST_SECTION["Sediment"]) + 
-  annotate("text", x = 0.5 + (9.5 - 0.5) / 2, y = y.mid, label = names(COLOR_HOST_SECTION["Fruit"]), size = 3, srt = 0) +
-  annotate("text", x = 9.5 + (18.5 - 9.5) / 2, y = y.mid, label = names(COLOR_HOST_SECTION["Leaf"]), size = 3, srt = 0) +
-  annotate("text", x = 18.5 + (27.5 - 18.5) / 2, y = y.mid, label = names(COLOR_HOST_SECTION["Pneumatophore"]), size = 3, srt = 0) +
-  annotate("text", x = 27.5 + (36.5 - 27.5) / 2, y = y.mid, label = names(COLOR_HOST_SECTION["Sediment"]), size = 3, srt = 0) +
-  
-  # For host section
-  geom_vline(xintercept = c(9.5, 18.5, 27.5, 36.5, 48.5, 60.5, 72.5, 84.5), alpha = 0.2) +
-  
-  # Host Taxa
-  annotate("rect", xmin = 0.5, xmax = 36.5, ymin = y.min - 1.5, ymax = y.min,
-           alpha = 1, fill = COLOR_HOST_TAXA[1]) +
-  annotate("text", x = 0.5 + (36.5 - 0.5) / 2, y = y.min - 1.5 / 2, label = names(COLOR_HOST_TAXA[1]), size = 5, srt = 0)
-
-heatplot
-ggsave(heatplot, filename = "./Outputs/relativeAbundanceHeatmap-mangrove-phylum-PNG-16s.svg", dpi = 300, width = 18, height = 15)
-
-heatplot_linear <- heatplot + 
-  scale_fill_gradient2(
-        #colors = c("white", "#132B43"),
-        low = "white",
-        mid = "#a6bddb",
-        high = "#2b8cbe",
-        midpoint = 0.5,
-        na.value = "white",
-        limits = c(0,1)
-        )
-ggsave(heatplot_linear, filename = "./Outputs/relativeAbundanceHeatmapLinear-mangrove-phylum-PNG-16s.svg", dpi = 300, width = 18, height = 15)
-```
-
-### By Phylum - Individual samples
-```{r}
-factor_melted_ps.bac.mangrove_by_sample <- unique(melted_ps.bac.mangrove[,c("site", "host", "hostSection", "Sample")])
-dataframe <- data.frame()  #creating dataframe to fill in information
-tax.bac.mangrove_table <- as.data.frame(ps.png.bac.mangrove@tax_table)
-tax.bac.mangrove_table$OTU <- row.names(tax.bac.mangrove_table)
-melted_ps.bac.mangrove_by_sample <- melted_ps.bac.mangrove
-
-for (i in 1:nrow(factor_melted_ps.bac.mangrove_by_sample)) {                                    #For each sample,
-  sub_ps.bac.mangrove <- melted_ps.bac.mangrove_by_sample[melted_ps.bac.mangrove_by_sample$site == factor_melted_ps.bac.mangrove_by_sample[i,1] &
-                                                          melted_ps.bac.mangrove_by_sample$host == factor_melted_ps.bac.mangrove_by_sample[i,2] &
-                                                          melted_ps.bac.mangrove_by_sample$hostSection == factor_melted_ps.bac.mangrove_by_sample[i,3] &
-                                                          melted_ps.bac.mangrove_by_sample$Sample == factor_melted_ps.bac.mangrove_by_sample[i,4],] #subset dataframe.
-  
-  per_rank_abundance <- aggregate(Abundance ~ Phylum, data = sub_ps.bac.mangrove, sum)  #Aggregate abundance based on each rank
-  
-  per_rank_abundance$site <- sub_ps.bac.mangrove$site[1:nrow(per_rank_abundance)] #Adding sample name to each rank row
-  per_rank_abundance$host <- sub_ps.bac.mangrove$host[1:nrow(per_rank_abundance)] 
-  per_rank_abundance$hostSection <- sub_ps.bac.mangrove$hostSection[1:nrow(per_rank_abundance)]
-  per_rank_abundance$Sample <- sub_ps.bac.mangrove$Sample[1:nrow(per_rank_abundance)]
-  
-  dataframe <- rbind(dataframe, per_rank_abundance)                       #store this in a dataframe for each row
-}
-
-#Sorting dataframe in order of hostTaxa, site, host, hostSection
-ordered_df.mangrove_by_sample <- dataframe[order(dataframe$site, dataframe$host, dataframe$hostSection),]
-ordered_df.mangrove_by_sample <- ordered_df.mangrove_by_sample %>% 
-  mutate(
-    siteTag = case_when(
-      site=="Kavieng" ~ "Kav", 
-      site=="Kimbe Bay" ~ "Kim", 
-      site=="Madang" ~ "Mad", 
-      site=="Milne Bay" ~ "Mil", 
-      site=="Port Moresby" ~ "Mot", 
-      site=="Rabaul" ~ "Rab"
-    ),
-    hostTag = case_when(
-      host=="Avicinea alba" ~ "Aa", 
-      host=="Sonneratia alba" ~ "Sa"
-    ),
-    hostSectionTag = case_when(
-      hostSection=="Fruit" ~ "Fru", 
-      hostSection=="Leaf" ~ "Lea", 
-      hostSection=="Pneumatophore" ~ "Pne", 
-      hostSection=="Sediment" ~ "Sed"
-    ),
-    SampleTag = Sample
-  )
-ordered_df.mangrove_by_sample$sortUID <- paste0(ordered_df.mangrove_by_sample$hostSectionTag, ordered_df.mangrove_by_sample$hostTag, ordered_df.mangrove_by_sample$siteTag, ordered_df.mangrove_by_sample$Sample)
-```
-
-```{r}
-table(ordered_df.mangrove_by_sample$host) / length(unique(ordered_df.mangrove$Phylum))
-table(ordered_df.mangrove_by_sample$hostSection) / length(unique(ordered_df.mangrove$Phylum))
-table(ordered_df.mangrove_by_sample$host, ordered_df.mangrove_by_sample$hostSection) / length(unique(ordered_df.mangrove$Phylum))
-heatplot <- ggplot(ordered_df.mangrove_by_sample, aes(reorder(sortUID, sortUID), reorder(Phylum, Phylum))) +
-  geom_tile(aes(fill = Abundance)) + 
-  labs(y = "Phylum", x = "") + 
-  scale_x_discrete(expand = c(0,0)) + 
-  scale_y_discrete(expand = c(0,0)) +
-  theme(axis.title = element_text(size = 20), axis.text.y = element_text(size = 13), 
-        axis.text.x = element_blank(),#element_text(angle = 90), 
-        axis.ticks.x = element_blank(),
-        legend.text = element_text(size = 13), legend.title = element_text(size = 15),
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + 
-  scale_fill_gradient2(
-        #colors = c("white", "#132B43"),
-        low = "white",
-        mid = "#a6bddb",
-        high = "#2b8cbe",#"#c62828","#132B43""#56B1F7""#1565c0""#ece7f2"
-        midpoint = mean(ordered_df$Abundance),
-        transform = "log",
-        na.value = "white",
-        breaks = 10^(-2*(5:0)),
-        limits = c(sort(unique(ordered_df$Abundance))[2],1)
-        )
-  
-y.min <- -0.5
-y.max <- 0.5
-y.mid <- y.min + (y.max - y.min) / 2
-heatplot <- heatplot +
-  
-  # Host Species
-  annotate("rect", xmin = 0.5, xmax = 40.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Avicinea alba"]) + 
-  annotate("rect", xmin = 40.5, xmax = 100.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Sonneratia alba"]) + 
-  annotate("rect", xmin = 100.5, xmax = 140.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Avicinea alba"]) + 
-  annotate("rect", xmin = 140.5, xmax = 200.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Sonneratia alba"]) + 
-  annotate("rect", xmin = 200.5, xmax = 240.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Avicinea alba"]) + 
-  annotate("rect", xmin = 240.5, xmax = 300.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Sonneratia alba"]) + 
-  annotate("rect", xmin = 300.5, xmax = 340.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Avicinea alba"]) + 
-  annotate("rect", xmin = 340.5, xmax = 400.5, ymin = y.min, ymax = y.max,
-           alpha = 0.5, fill = COLOR_HOST["Sonneratia alba"]) + 
-  annotate("text", x = 0.5 + (40.5 - 0.5) / 2, y = y.mid, label = names(COLOR_HOST["Avicinea alba"]), size = 3, srt = 0) +
-  annotate("text", x = 40.5 + (100.5 - 40.5) / 2, y = y.mid, label = names(COLOR_HOST["Sonneratia alba"]), size = 3, srt = 0) +
-  annotate("text", x = 100.5 + (140.5 - 100.5) / 2, y = y.mid, label = names(COLOR_HOST["Avicinea alba"]), size = 3, srt = 0) +
-  annotate("text", x = 140.5 + (200.5 - 140.5) / 2, y = y.mid, label = names(COLOR_HOST["Sonneratia alba"]), size = 3, srt = 0) +
-  annotate("text", x = 200.5 + (240.5 - 200.5) / 2, y = y.mid, label = names(COLOR_HOST["Avicinea alba"]), size = 3, srt = 0) +
-  annotate("text", x = 240.5 + (300.5 - 240.5) / 2, y = y.mid, label = names(COLOR_HOST["Sonneratia alba"]), size = 3, srt = 0) +
-  annotate("text", x = 300.5 + (340.5 - 300.5) / 2, y = y.mid, label = names(COLOR_HOST["Avicinea alba"]), size = 3, srt = 0) +
-  annotate("text", x = 340.5 + (400.5 - 340.5) / 2, y = y.mid, label = names(COLOR_HOST["Sonneratia alba"]), size = 3, srt = 0) +
-  
-  # For host species
-  geom_vline(xintercept = c(40.5, 100.5, 140.5, 200.5, 240.5, 300.5, 340.5), alpha = 0.2) +
-  
-  # Host Section
-  annotate("rect", xmin = 0.5, xmax = 100.5, ymin = y.min - 1.5, ymax = y.min,
-           alpha = 1, fill = COLOR_HOST_SECTION["Fruit"]) +
-  annotate("rect", xmin = 100.5, xmax = 200.5, ymin = y.min - 1.5, ymax = y.min,
-           alpha = 1, fill = COLOR_HOST_SECTION["Leaf"]) +
-  annotate("rect", xmin = 200.5, xmax = 300.5, ymin = y.min - 1.5, ymax = y.min,
-           alpha = 1, fill = COLOR_HOST_SECTION["Pneumatophore"]) +
-  annotate("rect", xmin = 300.5, xmax = 400.5, ymin = y.min - 1.5, ymax = y.min,
-           alpha = 1, fill = COLOR_HOST_SECTION["Sediment"]) + 
-  annotate("text", x = 0.5 + (100.5 - 0.5) / 2, y = y.min - 1.5 / 2, label = names(COLOR_HOST_SECTION["Fruit"]), size = 3, srt = 0) +
-  annotate("text", x = 100.5 + (200.5 - 100.5) / 2, y = y.min - 1.5 / 2, label = names(COLOR_HOST_SECTION["Leaf"]), size = 3, srt = 0) +
-  annotate("text", x = 200.5 + (300.5 - 200.5) / 2, y = y.min - 1.5 / 2, label = names(COLOR_HOST_SECTION["Pneumatophore"]), size = 3, srt = 0) +
-  annotate("text", x = 300.5 + (400.5 - 300.5) / 2, y = y.min - 1.5 / 2, label = names(COLOR_HOST_SECTION["Sediment"]), size = 3, srt = 0) +
-  
-  # For host section
-  geom_vline(xintercept = c(100.5, 200.5, 300.5), alpha = 0.5) +
-  
-  # Host Taxa
-  annotate("rect", xmin = 0.5, xmax = 400.5, ymin = y.min - 2.5, ymax = y.min - 1,
-           alpha = 1, fill = COLOR_HOST_TAXA[1]) +
-  annotate("text", x = 0.5 + (400.5 - 0.5) / 2, y = y.min - 2.5 + (1.5) / 2, label = names(COLOR_HOST_TAXA[1]), size = 5, srt = 0)
-  
-
-heatplot
-ggsave(heatplot, filename = "./Outputs/relativeAbundanceHeatmap-mangrove-sample-phylum-PNG-16s.svg", dpi = 300, width = 18, height = 15)
-
-heatplot_linear <- heatplot + 
-  scale_fill_gradient2(
-        #colors = c("white", "#132B43"),
-        low = "white",
-        mid = "#a6bddb",
-        high = "#2b8cbe",
-        midpoint = 0.5,
-        na.value = "white",
-        limits = c(0,1)
-        )
-ggsave(heatplot_linear, filename = "./Outputs/relativeAbundanceHeatmapLinear-mangrove-sample-phylum-PNG-16s.svg", dpi = 300, width = 18, height = 15)
 ```
 
 # Ordinations
