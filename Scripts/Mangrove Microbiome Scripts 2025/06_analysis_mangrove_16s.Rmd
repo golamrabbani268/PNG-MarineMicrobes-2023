@@ -400,10 +400,10 @@ plotRelativeAbundanceBarplot <- function(ps.variable, x.variable = "sampleName",
 ```{r}
 ### Mangrove
 ra_barplot_bac_mangrove_host_phylum <- plotRelativeAbundanceBarplot(ps.variable = ps.png.bac.mangrove.top20, x.variable = "host", fill.variable = "Phylum", color_pal = COLOR_PHYLUM, title.variable = "Mangrove")
-ggsave(ra_barplot_bac_mangrove_host_phylum, filename = "./Outputs/relativeAbundanceBarplot-magrove-host-phylum-PNG-16s.svg", dpi = 300, width = 12, height = 10)
+ggsave(ra_barplot_bac_mangrove_host_phylum, filename = "./Outputs/relativeAbundanceBarplot-mangrove-host-phylum-PNG-16s.svg", dpi = 300, width = 12, height = 10)
 ra_barplot_bac_mangrove_host_phylum
 ra_barplot_bac_mangrove_host_phylum_full <- plotRelativeAbundanceBarplot(ps.variable = ps.png.bac.mangrove, x.variable = "host", fill.variable = "Phylum", title.variable = "Mangrove")
-ggsave(ra_barplot_bac_mangrove_host_phylum_full, filename = "./Outputs/relativeAbundanceBarplot-magrove-host-phylum-PNG-16s-full.svg", dpi = 300, width = 12, height = 10)
+ggsave(ra_barplot_bac_mangrove_host_phylum_full, filename = "./Outputs/relativeAbundanceBarplot-mangrove-host-phylum-PNG-16s-full.svg", dpi = 300, width = 12, height = 10)
 ra_barplot_bac_mangrove_host_phylum_full
 ra_barplot_bac_mangrove_site_phylum <- plotRelativeAbundanceBarplot(ps.variable = ps.png.bac.mangrove.top20, x.variable = "site", fill.variable = "Phylum", color_pal = COLOR_PHYLUM, title.variable = "Mangrove")
 ggsave(ra_barplot_bac_mangrove_site_phylum, filename = "./Outputs/relativeAbundanceBarplot-mangrove-site-phylum-PNG-16s.svg", dpi = 300, width = 12, height = 10)
